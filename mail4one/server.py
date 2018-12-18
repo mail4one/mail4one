@@ -8,6 +8,8 @@ import sys
 from argparse import ArgumentParser
 from functools import partial
 from pathlib import Path
+# noinspection PyUnresolvedReferences
+import encodings.idna
 
 from aiosmtpd.controller import Controller
 from aiosmtpd.handlers import Mailbox
