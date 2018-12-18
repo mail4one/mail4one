@@ -139,6 +139,7 @@ def delete_messages(delete_ids):
 
 async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter):
     if WAIT_FOR_PRIVILEGES_TO_DROP:
+        logging.warning("Waiting for privileges to drop")
         await WAIT_FOR_PRIVILEGES_TO_DROP
     reader.set(stream_reader)
     writer.set(stream_writer)
@@ -160,6 +161,8 @@ async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asynci
 
 
 async def a_main(dirpath: Path, port: int, host="", context: ssl.SSLContext = None, waiter=None):
+    logging.info(
+        f"Starting POP3 server Maildir={dirpath}, host={host}, port={port}, context={context}, waiter={waiter}")
     global MAILS_PATH, WAIT_FOR_PRIVILEGES_TO_DROP
     MAILS_PATH = dirpath / 'new'
     WAIT_FOR_PRIVILEGES_TO_DROP = waiter
