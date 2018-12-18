@@ -128,7 +128,7 @@ def main():
 
     loop.create_task(controller.create_future())
     loop.create_task(pop3_main(args.mail_dir_path, args.pop_port,
-                               host=args.host, context=tls_context, waiter=controller.wait_for_privileges_to_drop))
+                               host=args.host, context=tls_context, waiter=controller.wait_for_privileges_to_drop()))
 
     controller.start()
     loop.call_soon_threadsafe(partial(drop_privileges, lambda: controller.has_privileges_dropped))
