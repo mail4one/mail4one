@@ -1,4 +1,8 @@
 import asyncio
+# Though we don't use requests, without the below import, we crash https://stackoverflow.com/a/13057751
+# When running on privilege port after dropping privileges.
+# noinspection PyUnresolvedReferences
+import encodings.idna
 import io
 import logging
 import mailbox
@@ -9,18 +13,12 @@ from argparse import ArgumentParser
 from functools import partial
 from pathlib import Path
 
-# Though we don't use requests, without the below import, we crash https://stackoverflow.com/a/13057751
-# When running on privilege port after dropping privileges.
-# noinspection PyUnresolvedReferences
-import encodings.idna
-
 from aiosmtpd.controller import Controller
 from aiosmtpd.handlers import Mailbox
 from aiosmtpd.main import DATA_SIZE_DEFAULT
 from aiosmtpd.smtp import SMTP
 
-
-# from pop3 import a_main
+from .pop3 import a_main as pop3_main
 
 
 def create_tls_context(certfile, keyfile):
@@ -40,6 +38,9 @@ class STARTTLSController(Controller):
 
     async def create_future(self):
         self.has_privileges_dropped = asyncio.get_event_loop().create_future()
+
+    async def wait_for_privileges_to_drop(self):
+        await self.has_privileges_dropped
 
     def factory(self):
         if not self.has_privileges_dropped.done():
@@ -80,7 +81,8 @@ def parse_args():
 
     # Hardcoded args
     args.host = '0.0.0.0'
-    args.port = 25
+    args.smtp_port = 25
+    args.pop_port = 995
     args.size = DATA_SIZE_DEFAULT
     args.classpath = MailboxCRLF
     args.smtputf8 = True
@@ -95,7 +97,7 @@ def setup_logging(args):
         logging.basicConfig(level=logging.INFO)
 
 
-def drop_privileges(future):
+def drop_privileges(future_cb):
     try:
         import pwd
     except ImportError:
@@ -109,7 +111,7 @@ def drop_privileges(future):
         logging.error("Cannot setuid nobody; run as root")
         sys.exit(1)
     logging.info("Dropped privileges")
-    future.set_result("Go!")
+    future_cb().set_result("Go!")
     logging.debug("Signalled! Clients can come in")
 
 
@@ -121,15 +123,17 @@ def main():
     handler = args.classpath(args.mail_dir_path)
     loop = asyncio.get_event_loop()
     loop.set_debug(args.debug)
-    # loop.create_task(a_main(args.mail_dir_path, tls_context))
     controller = STARTTLSController(
-        handler, tls_context=tls_context, smtp_args=smtp_args, hostname=args.host, port=args.port, loop=loop)
+        handler, tls_context=tls_context, smtp_args=smtp_args, hostname=args.host, port=args.smtp_port, loop=loop)
 
     loop.create_task(controller.create_future())
+    loop.create_task(pop3_main(args.mail_dir_path, args.pop_port,
+                               host=args.host, context=tls_context, waiter=controller.wait_for_privileges_to_drop))
 
     controller.start()
-    loop.call_soon_threadsafe(partial(drop_privileges, controller.has_privileges_dropped))
-    input('Press enter to stop:')
+    loop.call_soon_threadsafe(partial(drop_privileges, lambda: controller.has_privileges_dropped))
+    logging.info("Server started. Press [ENTER] to stop")
+    input()
     controller.stop()
     # loop.create_task(a_main(controller))
     # loop.run_forever()
