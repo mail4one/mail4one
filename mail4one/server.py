@@ -95,8 +95,8 @@ def drop_privileges(future):
         sys.exit(1)
     nobody = pwd.getpwnam('nobody')
     try:
-        os.setuid(nobody.pw_uid)
         os.setgid(nobody.pw_gid)
+        os.setuid(nobody.pw_uid)
     except PermissionError:
         logging.error("Cannot setuid nobody; run as root")
         sys.exit(1)
