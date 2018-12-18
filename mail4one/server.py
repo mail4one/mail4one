@@ -8,6 +8,9 @@ import sys
 from argparse import ArgumentParser
 from functools import partial
 from pathlib import Path
+
+# Though we don't use requests, without the below import, we crash https://stackoverflow.com/a/13057751
+# When running on privilege port after dropping privileges.
 # noinspection PyUnresolvedReferences
 import encodings.idna
 
@@ -58,8 +61,11 @@ class MaildirCRLF(mailbox.Maildir):
 
 
 class MailboxCRLF(Mailbox):
-    def __init__(self, mail_dir):
+    def __init__(self, mail_dir: Path):
         super().__init__(mail_dir)
+        for sub in ('new', 'tmp', 'cur'):
+            sub_path = mail_dir / sub
+            sub_path.mkdir(mode=0o755, exist_ok=True, parents=True)
         self.mailbox = MaildirCRLF(mail_dir)
 
 
