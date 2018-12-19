@@ -5,6 +5,8 @@ from _contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar, List, Set
+from hashlib import sha256
+from secrets import compare_digest
 
 from .poputils import InvalidCommand, parse_command, err, Command, ClientQuit, ClientError, AuthError, ok, msg, end, \
     Request, MailEntry, get_mail, get_mails_list, MailList
@@ -20,6 +22,7 @@ class Session:
     all_sessions: ClassVar[Set] = set()
     mails_path: ClassVar[Path] = Path("")
     current_session: ClassVar = ContextVar("session")
+    password_hash: ClassVar[str] = ""
 
     @classmethod
     def get(cls):
@@ -65,8 +68,8 @@ def write(data):
     Session.writer().write(data)
 
 
-def validate_user_and_pass(username, password):
-    if username != password:
+def validate_password(password):
+    if not compare_digest(Session.password_hash, sha256(password).hexdigest()):
         raise AuthError("Invalid user pass")
 
 
@@ -77,7 +80,7 @@ async def handle_user_pass_auth(user_cmd):
     write(ok("Welcome"))
     cmd = await expect_cmd(Command.PASS)
     password = cmd.arg1
-    validate_user_and_pass(username, password)
+    validate_password(password)
     logging.info(f"User: {username} has logged in successfully")
     return username
 
@@ -252,8 +255,9 @@ async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asynci
         stream_writer.close()
 
 
-async def create_pop_server(dirpath: Path, port: int, host="", context: ssl.SSLContext = None):
+async def create_pop_server(dirpath: Path, port: int, password_hash: str, host="", context: ssl.SSLContext = None):
     Session.mails_path = dirpath
+    Session.password_hash = password_hash
     logging.info(
         f"Starting POP3 server Maildir={dirpath}, host={host}, port={port}, context={context}")
     return await asyncio.start_server(new_session, host=host, port=port, ssl=context)
@@ -265,4 +269,4 @@ async def a_main(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    asyncio.run(a_main(Path("/tmp/mails"), 9995))
+    asyncio.run(a_main(Path("/tmp/mails"), 9995, password_hash=sha256("dummy").hexdigest()))
