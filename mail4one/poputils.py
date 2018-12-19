@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from enum import Enum, auto
+from pathlib import Path
 from typing import NewType, List
 
 
@@ -109,7 +110,7 @@ class MailEntry:
 
 
 class MailStorage:
-    def __init__(self, dirpath: str):
+    def __init__(self, dirpath: Path):
         self.dirpath = dirpath
         self.files = files_in_path(self.dirpath)
         self.entries = [MailEntry(filename, path) for filename, path in self.files]
@@ -127,3 +128,4 @@ class MailStorage:
     def get_mail(entry: MailEntry) -> bytes:
         with open(entry.path, mode='rb') as fp:
             return fp.read()
+
