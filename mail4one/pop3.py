@@ -82,7 +82,6 @@ async def auth_stage():
 
 
 MAILS_PATH = ""
-WAIT_FOR_PRIVILEGES_TO_DROP = None
 
 
 async def transaction_stage(user: User):
@@ -138,9 +137,6 @@ def delete_messages(delete_ids):
 
 
 async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter):
-    if WAIT_FOR_PRIVILEGES_TO_DROP:
-        logging.warning("Waiting for privileges to drop")
-        await WAIT_FOR_PRIVILEGES_TO_DROP
     reader.set(stream_reader)
     writer.set(stream_writer)
     logging.info(f"New session started with {stream_reader} and {stream_writer}")
@@ -153,23 +149,25 @@ async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asynci
     except ClientError as c:
         write(err("Something went wrong"))
         logging.error(f"Unexpected client error", c)
-    except:
-        logging.error(f"Serious client error")
+    except Exception as e:
+        logging.error(f"Serious client error", e)
         raise
     finally:
         stream_writer.close()
 
 
-async def a_main(dirpath: Path, port: int, host="", context: ssl.SSLContext = None, waiter=None):
+async def create_pop_server(dirpath: Path, port: int, host="", context: ssl.SSLContext = None):
     logging.info(
-        f"Starting POP3 server Maildir={dirpath}, host={host}, port={port}, context={context}, waiter={waiter}")
-    global MAILS_PATH, WAIT_FOR_PRIVILEGES_TO_DROP
+        f"Starting POP3 server Maildir={dirpath}, host={host}, port={port}, context={context}")
+    global MAILS_PATH
     MAILS_PATH = dirpath / 'new'
-    WAIT_FOR_PRIVILEGES_TO_DROP = waiter
-    server = await asyncio.start_server(new_session, host=host, port=port, ssl=context)
+    return await asyncio.start_server(new_session, host=host, port=port, ssl=context)
+
+
+async def a_main(*args, **kwargs):
+    server = await create_pop_server(*args, **kwargs)
     await server.serve_forever()
 
 
 if __name__ == "__main__":
-    # noinspection PyTypeChecker
     asyncio.run(a_main(Path("/tmp/mails"), 9995))
