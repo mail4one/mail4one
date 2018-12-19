@@ -247,9 +247,9 @@ async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asynci
 
     except ClientError as c:
         write(err("Something went wrong"))
-        logging.error(f"Unexpected client error", c)
+        logging.error(f"Unexpected client error: {c}")
     except Exception as e:
-        logging.error(f"Serious client error", e)
+        logging.error(f"Serious client error: {e}")
         raise
     finally:
         if username:
