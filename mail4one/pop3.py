@@ -98,6 +98,7 @@ async def auth_stage():
                     raise AuthError("Already logged in")
                 else:
                     write(ok("Login successful"))
+                    return username
         except AuthError as ae:
             write(err(f"Auth Failed: {ae}"))
         except ClientQuit as c:
