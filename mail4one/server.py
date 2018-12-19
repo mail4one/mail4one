@@ -63,11 +63,10 @@ def drop_privileges():
 
 
 async def a_main(args, tls_context):
-    # pop_server = await create_pop_server(args.mail_dir_path, port=args.pop_port, host=args.host, context=tls_context)
+    pop_server = await create_pop_server(args.mail_dir_path, port=args.pop_port, host=args.host, context=tls_context)
     smtp_server = await create_smtp_server(args.mail_dir_path, port=args.smtp_port, host=args.host, context=tls_context)
     drop_privileges()
-    # await pop_server.start_serving()
-    await smtp_server.serve_forever()
+    await asyncio.gather(pop_server.serve_forever(), smtp_server.serve_forever())
 
 
 def main():
