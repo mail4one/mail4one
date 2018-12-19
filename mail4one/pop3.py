@@ -154,7 +154,6 @@ def trans_command_retr(mails, req):
         write(ok("Contents follow"))
         write(get_mail(entry))
         write(end())
-        drain()
     else:
         write(err("Not found"))
 
@@ -207,10 +206,14 @@ async def process_transactions(mails_list: List[MailEntry]):
 
 
 async def transaction_stage(deleted_items_path: Path):
-    with deleted_items_path.open() as f:
-        deleted_items = set(f.read().splitlines())
+    if deleted_items_path.exists():
+        with deleted_items_path.open() as f:
+            deleted_items = set(f.read().splitlines())
+    else:
+        deleted_items = set()
 
     mails_list = [entry for entry in get_mails_list(Session.mails_path / 'new') if entry.uid not in deleted_items]
+
     return await process_transactions(mails_list)
 
 
