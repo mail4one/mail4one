@@ -69,7 +69,9 @@ def write(data):
 
 
 def validate_password(password):
-    if not compare_digest(Session.password_hash, sha256(password.encode()).hexdigest()):
+    salt = "balki is awesome+"
+    salted = f"{salt}{password}"
+    if not compare_digest(Session.password_hash, sha256(salted.encode()).hexdigest()):
         raise AuthError("Invalid user pass")
 
 
