@@ -69,7 +69,7 @@ def write(data):
 
 
 def validate_password(password):
-    if not compare_digest(Session.password_hash, sha256(password).hexdigest()):
+    if not compare_digest(Session.password_hash, sha256(password.encode()).hexdigest()):
         raise AuthError("Invalid user pass")
 
 
@@ -269,4 +269,4 @@ async def a_main(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    asyncio.run(a_main(Path("/tmp/mails"), 9995, password_hash=sha256("dummy").hexdigest()))
+    asyncio.run(a_main(Path("/tmp/mails"), 9995, password_hash=sha256("dummy".encode()).hexdigest()))
