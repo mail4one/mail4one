@@ -24,7 +24,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--certfile')
     parser.add_argument('--keyfile')
-    parser.add_argument('--password')
+    parser.add_argument('--password_hash')
     parser.add_argument("mail_dir_path")
 
     args = parser.parse_args()
@@ -65,7 +65,7 @@ def drop_privileges():
 
 async def a_main(args, tls_context):
     pop_server = await create_pop_server(
-        args.mail_dir_path, port=args.pop_port, host=args.host, context=tls_context, password=args.password)
+        args.mail_dir_path, port=args.pop_port, host=args.host, context=tls_context, password_hash=args.password_hash)
     smtp_server = await create_smtp_server(args.mail_dir_path, port=args.smtp_port, host=args.host, context=tls_context)
     drop_privileges()
     await asyncio.gather(pop_server.serve_forever(), smtp_server.serve_forever())
