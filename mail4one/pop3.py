@@ -10,10 +10,11 @@ from .poputils import InvalidCommand, parse_command, err, Command, ClientQuit, C
     Request, MailEntry, get_mail, get_mails_list, MailList
 
 
+# noinspection PyProtectedMember
 @dataclass
 class Session:
-    reader: asyncio.StreamReader
-    writer: asyncio.StreamWriter
+    _reader: asyncio.StreamReader
+    _writer: asyncio.StreamWriter
 
     # common state
     all_sessions: ClassVar[Set] = set()
@@ -26,11 +27,11 @@ class Session:
 
     @classmethod
     def reader(cls):
-        return cls.get().reader
+        return cls.get()._reader
 
     @classmethod
     def writer(cls):
-        return cls.get().writer
+        return cls.get()._writer
 
 
 async def next_req():
@@ -61,13 +62,11 @@ async def expect_cmd(*commands: Command):
 
 def write(data):
     logging.debug(f"Server: {data}")
-    session: Session = Session.current_session.get()
-    session.writer.write(data)
+    Session.writer().write(data)
 
 
 async def drain():
-    session: Session = Session.current_session.get()
-    await session.writer.drain()
+    await Session.writer().drain()
 
 
 def validate_user_and_pass(username, password):
