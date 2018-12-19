@@ -65,10 +65,6 @@ def write(data):
     Session.writer().write(data)
 
 
-async def drain():
-    await Session.writer().drain()
-
-
 def validate_user_and_pass(username, password):
     if username != password:
         raise AuthError("Invalid user pass")
@@ -135,7 +131,6 @@ def trans_command_list(mails, req):
         for entry in mails.get_all():
             write(msg(f"{entry.nid} {entry.size}"))
         write(end())
-        await drain()
 
 
 def trans_command_uidl(mails, req):
@@ -150,7 +145,6 @@ def trans_command_uidl(mails, req):
         for entry in mails.get_all():
             write(msg(f"{entry.nid} {entry.uid}"))
         write(end())
-        await drain()
 
 
 def trans_command_retr(mails, req):
@@ -208,6 +202,7 @@ async def process_transactions(mails_list: List[MailEntry]):
             raise ClientError("We shouldn't reach here")
         else:
             func(mails, req)
+            await Session.writer().drain()
 
 
 async def transaction_stage(deleted_items_path: Path):
