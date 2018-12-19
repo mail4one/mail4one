@@ -28,15 +28,17 @@ User = NewType('User', str)
 
 
 class Command(Enum):
+    CAPA = auto()
     USER = auto()
     PASS = auto()
-    CAPA = auto()
     QUIT = auto()
+    STAT = auto()
     LIST = auto()
     UIDL = auto()
     RETR = auto()
     DELE = auto()
-    STAT = auto()
+    RSET = auto()
+    NOOP = auto()
 
 
 @dataclass
@@ -88,11 +90,6 @@ def parse_command(line: bytes) -> Request:
     return request
 
 
-def files_in_path(path):
-    for _, _, files in os.walk(path):
-        return [(f, os.path.join(path, f)) for f in files]
-
-
 @dataclass
 class MailEntry:
     uid: str
@@ -109,23 +106,46 @@ class MailEntry:
         self.path = path
 
 
-class MailStorage:
-    def __init__(self, dirpath: Path):
-        self.dirpath = dirpath
-        self.files = files_in_path(self.dirpath)
-        self.entries = [MailEntry(filename, path) for filename, path in self.files]
-        self.entries = sorted(self.entries, reverse=True, key=lambda e: e.c_time)
-        for i, entry in enumerate(self.entries, start=1):
-            entry.nid = i
+def files_in_path(path):
+    for _, _, files in os.walk(path):
+        return [(f, os.path.join(path, f)) for f in files]
 
-    def get_mailbox_size(self) -> (int, int):
-        return len(self.entries), sum(entry.size for entry in self.entries)
 
-    def get_mails_list(self) -> List[MailEntry]:
-        return self.entries
+def get_mails_list(dirpath: Path) -> List[MailEntry]:
+    files = files_in_path(dirpath)
+    entries = [MailEntry(filename, path) for filename, path in files]
+    return entries
 
-    @staticmethod
-    def get_mail(entry: MailEntry) -> bytes:
-        with open(entry.path, mode='rb') as fp:
-            return fp.read()
+
+def set_nid(entries: List[MailEntry]):
+    entries.sort(reverse=True, key=lambda e: e.c_time)
+    entries = sorted(entries, reverse=True, key=lambda e: e.c_time)
+    for i, entry in enumerate(entries, start=1):
+        entry.nid = i
+
+
+def get_mail(entry: MailEntry) -> bytes:
+    with open(entry.path, mode='rb') as fp:
+        return fp.read()
+
+
+class MailList:
+    def __init__(self, entries: List[MailEntry]):
+        self.entries = entries
+        set_nid(self.entries)
+        self.mails_map = {str(e.nid): e for e in entries}
+        self.deleted_uids = set()
+
+    def delete(self, nid: str):
+        self.deleted_uids.add(self.mails_map.pop(nid).uid)
+
+    def get(self, nid: str):
+        self.mails_map.get(nid)
+
+    def get_all(self):
+        return [e for e in self.entries if str(e.nid) in self.mails_map]
+
+    def compute_stat(self):
+        entries = self.get_all()
+        return len(entries), sum(entry.size for entry in entries)
 

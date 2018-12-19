@@ -4,11 +4,10 @@ import ssl
 from _contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar, List, Coroutine
-from collections import deque
+from typing import ClassVar, List, Set
 
 from .poputils import InvalidCommand, parse_command, err, Command, ClientQuit, ClientError, AuthError, ok, msg, end, \
-    MailStorage, Request
+    Request, MailEntry, get_mail, get_mails_list, MailList
 
 
 @dataclass
@@ -18,9 +17,8 @@ class Session:
     username: str = ""
     read_items: Path = None
     # common state
-    all_sessions: ClassVar[List] = []
+    all_sessions: ClassVar[Set] = set()
     mails_path: ClassVar[Path] = Path("")
-    wait_for_privileges_to_drop: ClassVar[Coroutine] = None
     pending_request: Request = None
 
     def pop_request(self):
@@ -84,7 +82,9 @@ async def handle_user_pass_auth(user_cmd):
     password = cmd.arg1
     validate_user_and_pass(username, password)
     write(ok("Good"))
-    return username, password
+    logging.info(f"User: {username} has logged in successfully")
+    session.username = username
+    Session.all_sessions.add(username)
 
 
 async def auth_stage():
@@ -98,9 +98,7 @@ async def auth_stage():
                 write(msg("USER"))
                 write(end())
             else:
-                username, password = await handle_user_pass_auth(req)
-                logging.info(f"User: {username} has logged in successfully")
-                return username
+                return await handle_user_pass_auth(req)
         except AuthError:
             write(err("Wrong auth"))
         except ClientQuit as c:
@@ -111,65 +109,96 @@ async def auth_stage():
         raise ClientError("Failed to authenticate")
 
 
-async def transaction_stage():
+async def process_transactions(mails_list: List[MailEntry]):
     session: Session = current_session.get()
-    logging.debug(f"Entering transaction stage for {session.username}")
-    deleted_message_ids = []
-    mailbox = MailStorage(Session.mails_path / 'new')
 
-    with session.read_items.open() as f:
-        read_items = set(f.read().splitlines())
+    mails = MailList(mails_list)
 
-    mails_list = mailbox.get_mails_list()
-    mails_map = {str(entry.nid): entry for entry in mails_list}
     while True:
         try:
-            req = await next_req()
+            req = await session.next_req()
             logging.debug(f"Request: {req}")
             if req.cmd is Command.CAPA:
-                write(ok("No CAPA"))
+                write(ok("CAPA follows"))
+                write(msg("UIDL"))
                 write(end())
             elif req.cmd is Command.STAT:
-                num, size = mailbox.get_mailbox_size()
+                num, size = mails.compute_stat()
                 write(ok(f"{num} {size}"))
             elif req.cmd is Command.LIST:
                 if req.arg1:
-                    write(ok(f"{req.arg1} {mails_map[req.arg1].size}"))
+                    entry = mails.get(req.arg1)
+                    if entry:
+                        write(ok(f"{req.arg1} {entry.size}"))
+                    else:
+                        write(err("Not found"))
                 else:
                     write(ok("Mails follow"))
-                    for entry in mails_list:
+                    for entry in mails.get_all():
                         write(msg(f"{entry.nid} {entry.size}"))
                     write(end())
             elif req.cmd is Command.UIDL:
                 if req.arg1:
-                    write(ok(f"{req.arg1} {mails_map[req.arg1].uid}"))
+                    entry = mails.get(req.arg1)
+                    if entry:
+                        write(ok(f"{req.arg1} {entry.uid}"))
+                    else:
+                        write(err("Not found"))
                 else:
                     write(ok("Mails follow"))
-                    for entry in mails_list:
+                    for entry in mails.get_all():
                         write(msg(f"{entry.nid} {entry.uid}"))
                     write(end())
                     await session.writer.drain()
             elif req.cmd is Command.RETR:
-                if req.arg1 not in mails_map:
-                    write(err("Not found"))
-                else:
+                entry = mails.get(req.arg1)
+                if entry:
                     write(ok("Contents follow"))
-                    write(mailbox.get_mail(mails_map[req.arg1]))
+                    write(get_mail(entry))
                     write(end())
                     await session.writer.drain()
+                else:
+                    write(err("Not found"))
+            elif req.cmd is Command.DELE:
+                entry = mails.get(req.arg1)
+                if entry:
+                    mails.delete(req.arg1)
+                else:
+                    write(err("Not found"))
+            elif req.cmd is Command.RSET:
+                mails = MailList(mails_list)
+            elif req.cmd is Command.NOOP:
+                pass
             else:
                 write(err("Not implemented"))
+                raise ClientError("We shouldn't reach here")
         except ClientQuit:
             write(ok("Bye"))
-            return deleted_message_ids
+            return mails.deleted_uids
+
+
+async def transaction_stage():
+    session: Session = current_session.get()
+    logging.debug(f"Entering transaction stage for {session.username}")
+    session.read_items = Session.mails_path / session.username
+
+    with session.read_items.open() as f:
+        read_items = set(f.read().splitlines())
+
+    mails_list = [entry for entry in get_mails_list(Session.mails_path / 'new') if entry.uid not in read_items]
+    return await process_transactions(mails_list)
 
 
 def delete_messages(delete_ids):
+    session: Session = current_session.get()
+    with session.read_items.open(mode="w") as f:
+        f.writelines(delete_ids)
     logging.info(f"Client deleted these ids {delete_ids}")
 
 
 async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter):
-    current_session.set(Session(stream_reader, stream_writer))
+    session = Session(stream_reader, stream_writer)
+    current_session.set(session)
     logging.info(f"New session started with {stream_reader} and {stream_writer}")
     try:
         await auth_stage()
@@ -182,6 +211,8 @@ async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asynci
         logging.error(f"Serious client error", e)
         raise
     finally:
+        if session.username:
+            Session.all_sessions.remove(session.username)
         stream_writer.close()
 
 
