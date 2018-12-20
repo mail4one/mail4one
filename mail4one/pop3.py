@@ -120,12 +120,12 @@ def trans_command_capa(_, __):
     write(end())
 
 
-def trans_command_stat(mails, _):
+def trans_command_stat(mails: MailList, _):
     num, size = mails.compute_stat()
     write(ok(f"{num} {size}"))
 
 
-def trans_command_list(mails, req):
+def trans_command_list(mails: MailList, req: Request):
     if req.arg1:
         entry = mails.get(req.arg1)
         if entry:
@@ -139,7 +139,7 @@ def trans_command_list(mails, req):
         write(end())
 
 
-def trans_command_uidl(mails, req):
+def trans_command_uidl(mails: MailList, req: Request):
     if req.arg1:
         entry = mails.get(req.arg1)
         if entry:
@@ -153,7 +153,7 @@ def trans_command_uidl(mails, req):
         write(end())
 
 
-def trans_command_retr(mails, req):
+def trans_command_retr(mails: MailList, req: Request):
     entry = mails.get(req.arg1)
     if entry:
         write(ok("Contents follow"))
@@ -163,7 +163,7 @@ def trans_command_retr(mails, req):
         write(err("Not found"))
 
 
-def trans_command_dele(mails, req):
+def trans_command_dele(mails: MailList, req: Request):
     entry = mails.get(req.arg1)
     if entry:
         mails.delete(req.arg1)

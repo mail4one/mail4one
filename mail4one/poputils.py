@@ -140,7 +140,7 @@ class MailList:
         self.deleted_uids.add(self.mails_map.pop(nid).uid)
 
     def get(self, nid: str):
-        self.mails_map.get(nid)
+        return self.mails_map.get(nid)
 
     def get_all(self):
         return [e for e in self.entries if str(e.nid) in self.mails_map]
