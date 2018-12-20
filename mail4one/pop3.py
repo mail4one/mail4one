@@ -220,7 +220,8 @@ async def transaction_stage(deleted_items_path: Path):
 
     mails_list = [entry for entry in get_mails_list(Session.mails_path / 'new') if entry.uid not in deleted_items]
 
-    return await process_transactions(mails_list)
+    new_deleted_items: Set = await process_transactions(mails_list)
+    return deleted_items.union(new_deleted_items)
 
 
 def delete_messages(delete_ids, deleted_items_path: Path):
