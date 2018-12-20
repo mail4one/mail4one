@@ -225,7 +225,7 @@ async def transaction_stage(deleted_items_path: Path):
 
 def delete_messages(delete_ids, deleted_items_path: Path):
     with deleted_items_path.open(mode="w") as f:
-        f.writelines(delete_ids)
+        f.writelines(f"{did}\n" for did in delete_ids)
 
 
 async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter):
