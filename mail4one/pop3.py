@@ -167,6 +167,7 @@ def trans_command_dele(mails: MailList, req: Request):
     entry = mails.get(req.arg1)
     if entry:
         mails.delete(req.arg1)
+        write(ok("Deleted"))
     else:
         write(err("Not found"))
 
