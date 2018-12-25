@@ -10,7 +10,7 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
-from .smtp import create_smtp_server
+from .smtp import create_smtp_server_starttls, create_smtp_server_tls
 from .pop3 import create_pop_server
 
 
@@ -33,6 +33,8 @@ def parse_args():
     # Hardcoded args
     args.host = '0.0.0.0'
     args.smtp_port = 25
+    args.smtp_port_tls = 465
+    args.smtp_port_submission = 587
     args.pop_port = 995
     args.smtputf8 = True
     args.debug = True
@@ -66,9 +68,15 @@ def drop_privileges():
 async def a_main(args, tls_context):
     pop_server = await create_pop_server(
         args.mail_dir_path, port=args.pop_port, host=args.host, context=tls_context, password_hash=args.password_hash)
-    smtp_server = await create_smtp_server(args.mail_dir_path, port=args.smtp_port, host=args.host, context=tls_context)
+    smtp_server_starttls = await create_smtp_server_starttls(
+        args.mail_dir_path, port=args.smtp_port, host=args.host, context=tls_context)
+    smtp_server_tls = await create_smtp_server_tls(
+        args.mail_dir_path, port=args.smtp_port_tls, host=args.host, context=tls_context)
     drop_privileges()
-    await asyncio.gather(pop_server.serve_forever(), smtp_server.serve_forever())
+    await asyncio.gather(
+        pop_server.serve_forever(),
+        smtp_server_starttls.serve_forever(),
+        smtp_server_tls.serve_forever())
 
 
 def main():
