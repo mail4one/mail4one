@@ -1,15 +1,19 @@
 import asyncio
 import logging
+import os
 import ssl
 from _contextvars import ContextVar
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 from typing import ClassVar, List, Set
-from hashlib import sha256
-from secrets import compare_digest
 
 from .poputils import InvalidCommand, parse_command, err, Command, ClientQuit, ClientError, AuthError, ok, msg, end, \
     Request, MailEntry, get_mail, get_mails_list, MailList
+
+
+def add_season(content: bytes, season: bytes):
+    return sha256(season + content).digest()
 
 
 # noinspection PyProtectedMember
@@ -23,6 +27,13 @@ class Session:
     mails_path: ClassVar[Path] = Path("")
     current_session: ClassVar = ContextVar("session")
     password_hash: ClassVar[str] = ""
+    SALT: ClassVar[bytes] = b"balki is awesome+"
+    pepper: ClassVar[bytes]
+
+    @classmethod
+    def init_password(cls, salted_hash: str):
+        cls.pepper = os.urandom(32)
+        cls.password_hash = add_season(bytes.fromhex(salted_hash), cls.pepper)
 
     @classmethod
     def get(cls):
@@ -69,9 +80,7 @@ def write(data):
 
 
 def validate_password(password):
-    salt = "balki is awesome+"
-    salted = f"{salt}{password}"
-    if not compare_digest(Session.password_hash, sha256(salted.encode()).hexdigest()):
+    if Session.password_hash != add_season(add_season(password.encode(), Session.SALT), Session.pepper):
         raise AuthError("Invalid user pass")
 
 
@@ -268,7 +277,7 @@ async def timed_cb(stream_reader: asyncio.StreamReader, stream_writer: asyncio.S
 
 async def create_pop_server(dirpath: Path, port: int, password_hash: str, host="", context: ssl.SSLContext = None):
     Session.mails_path = dirpath
-    Session.password_hash = password_hash
+    Session.init_password(password_hash)
     logging.info(
         f"Starting POP3 server Maildir={dirpath}, host={host}, port={port}, context={context}")
     return await asyncio.start_server(timed_cb, host=host, port=port, ssl=context)
@@ -280,4 +289,4 @@ async def a_main(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    asyncio.run(a_main(Path("/tmp/mails"), 9995, password_hash=sha256("dummy".encode()).hexdigest()))
+    asyncio.run(a_main(Path("/tmp/mails"), 9995, password_hash=add_season(b"dummy", Session.SALT).hexdigest()))
