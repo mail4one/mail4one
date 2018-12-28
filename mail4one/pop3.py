@@ -259,12 +259,19 @@ async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asynci
         stream_writer.close()
 
 
+async def timed_cb(stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter):
+    try:
+        return await asyncio.wait_for(new_session(stream_reader, stream_writer), 60)
+    finally:
+        stream_writer.close()
+
+
 async def create_pop_server(dirpath: Path, port: int, password_hash: str, host="", context: ssl.SSLContext = None):
     Session.mails_path = dirpath
     Session.password_hash = password_hash
     logging.info(
         f"Starting POP3 server Maildir={dirpath}, host={host}, port={port}, context={context}")
-    return await asyncio.start_server(new_session, host=host, port=port, ssl=context)
+    return await asyncio.start_server(timed_cb, host=host, port=port, ssl=context)
 
 
 async def a_main(*args, **kwargs):
