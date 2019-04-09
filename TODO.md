@@ -1,4 +1,4 @@
-#TODO
+# TODO
 
 1. unittests
 1. Web interface
@@ -11,3 +11,6 @@
   2. Support multiple subdomains and save in different folders
 1. smtp2go integration
 1. metrics
+2. imap
+3. handle connection disconnect
+4. rethink deleted items
