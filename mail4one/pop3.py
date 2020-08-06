@@ -288,5 +288,20 @@ async def a_main(*args, **kwargs):
     await server.serve_forever()
 
 
+def debug_main():
+    logging.basicConfig(level=logging.DEBUG)
+
+    import sys
+
+    _, mails_path, port, password = sys.argv
+
+    mails_path = Path(mails_path)
+    port = int(port)
+    password_hash = add_season(password.encode(), Session.SALT).hex()
+
+    asyncio.run(a_main(mails_path, port, password_hash=password_hash))
+
+
 if __name__ == "__main__":
-    asyncio.run(a_main(Path("/tmp/mails"), 9995, password_hash=add_season(b"dummy", Session.SALT).hexdigest()))
+    debug_main()
+

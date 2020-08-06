@@ -16,6 +16,10 @@ Mail server for single user #asyncio #python
     pipenv install
     sudo $(pipenv --venv)/bin/python ./run.py --certfile /etc/letsencrypt/live/your.domain.com/fullchain.pem --keyfile /etc/letsencrypt/live/your.domain.com/privkey.pem /var/mails --password_hash <PASSWORD_HASH_FROM_ABOVE>
 
+## Just pop server for debugging
+
+    pipenv run python -m mail4one.pop3 /path/to/mails 9995 your_password
+
 ## Nextups
 
  * Support sending emails - Also support for popular services like mailgun/sendgrid 
