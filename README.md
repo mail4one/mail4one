@@ -1,6 +1,6 @@
 # mail4one
 
-mail server for single user #asyncio #python
+Mail server for single user #asyncio #python
 
 ## Features
 
@@ -33,7 +33,7 @@ mail server for single user #asyncio #python
 ## Known to work
  * Server: Google Cloud f1-micro with Ubuntu 18.04 - Always Free instance
  * Clients: thunderbird, evolution, k9mail
- * smtp: Received email from all. Didnt see any drops. Tested from gmail, protonmail, reddit and few others
+ * smtp: Received email from all. Didn't see any drops. Tested from gmail, protonmail, reddit and few others
 
 ## Contribution
 
