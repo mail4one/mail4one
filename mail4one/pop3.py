@@ -220,22 +220,24 @@ async def process_transactions(mails_list: List[MailEntry]):
             await Session.writer().drain()
 
 
-async def transaction_stage(deleted_items_path: Path):
+def get_deleted_items(deleted_items_path: Path):
     if deleted_items_path.exists():
         with deleted_items_path.open() as f:
-            deleted_items = set(f.read().splitlines())
-    else:
-        deleted_items = set()
+            return set(f.read().splitlines())
+    return set()
 
-    mails_list = [entry for entry in get_mails_list(Session.mails_path / 'new') if entry.uid not in deleted_items]
+
+def save_deleted_items(deleted_items_path: Path, deleted_items: Set):
+    with deleted_items_path.open(mode="w") as f:
+        f.writelines(f"{did}\n" for did in deleted_items)
+
+
+async def transaction_stage(existing_deleted_items: Set):
+    mails_list = [entry for entry in get_mails_list(Session.mails_path / 'new') if
+                  entry.uid not in existing_deleted_items]
 
     new_deleted_items: Set = await process_transactions(mails_list)
-    return deleted_items.union(new_deleted_items)
-
-
-def delete_messages(delete_ids, deleted_items_path: Path):
-    with deleted_items_path.open(mode="w") as f:
-        f.writelines(f"{did}\n" for did in delete_ids)
+    return new_deleted_items
 
 
 async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter):
@@ -250,10 +252,14 @@ async def new_session(stream_reader: asyncio.StreamReader, stream_writer: asynci
         deleted_items_path = Session.mails_path / username
         logging.info(f"User:{username} logged in successfully")
 
-        delete_ids = await transaction_stage(deleted_items_path)
-        logging.info(f"User:{username} completed transactions. Deleted:{delete_ids}")
+        existing_deleted_items: Set = get_deleted_items(deleted_items_path)
 
-        delete_messages(delete_ids, deleted_items_path)
+        new_deleted_items: Set = await transaction_stage(existing_deleted_items)
+        logging.info(f"User:{username} completed transactions. Deleted:{new_deleted_items}")
+
+        if new_deleted_items:
+            save_deleted_items(deleted_items_path, existing_deleted_items.union(new_deleted_items))
+
         logging.info(f"User:{username} Saved deleted items")
 
     except ClientError as c:
@@ -304,4 +310,3 @@ def debug_main():
 
 if __name__ == "__main__":
     debug_main()
-
