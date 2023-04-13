@@ -109,6 +109,7 @@ class MailEntry:
 def files_in_path(path):
     for _, _, files in os.walk(path):
         return [(f, os.path.join(path, f)) for f in files]
+    return []
 
 
 def get_mails_list(dirpath: Path) -> List[MailEntry]:
