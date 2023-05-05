@@ -159,6 +159,7 @@ def trans_command_retr(mails: MailList, req: Request):
         write(ok("Contents follow"))
         write(get_mail(entry))
         write(end())
+        mails.delete(req.arg1)
     else:
         write(err("Not found"))
 
