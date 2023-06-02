@@ -13,6 +13,8 @@ from pathlib import Path
 from .smtp import create_smtp_server_starttls, create_smtp_server_tls
 from .pop3 import create_pop_server
 
+from .config import Config
+
 
 def create_tls_context(certfile, keyfile):
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -48,44 +50,43 @@ def setup_logging(args):
         logging.basicConfig(level=logging.INFO)
 
 
-def drop_privileges():
-    try:
-        import pwd
-    except ImportError:
-        logging.error("Cannot import pwd; run as root")
-        sys.exit(1)
-    nobody = pwd.getpwnam('nobody')
-    try:
-        os.setgid(nobody.pw_gid)
-        os.setuid(nobody.pw_uid)
-    except PermissionError:
-        logging.error("Cannot setuid nobody; run as root")
-        sys.exit(1)
-    logging.info("Dropped privileges")
-    logging.debug("Signalled! Clients can come in")
+async def a_main(config, tls_context):
+    pop_server = await create_pop_server(config.mails_path,
+                                         port=config.pop_port,
+                                         host=config.host,
+                                         context=tls_context,
+                                         users=config.users)
 
-
-async def a_main(args, tls_context):
-    pop_server = await create_pop_server(
-        args.mail_dir_path, port=args.pop_port, host=args.host, context=tls_context, password_hash=args.password_hash)
     smtp_server_starttls = await create_smtp_server_starttls(
-        args.mail_dir_path, port=args.smtp_port, host=args.host, context=tls_context)
-    smtp_server_tls = await create_smtp_server_tls(
-        args.mail_dir_path, port=args.smtp_port_tls, host=args.host, context=tls_context)
-    drop_privileges()
-    await asyncio.gather(
-        pop_server.serve_forever(),
-        smtp_server_starttls.serve_forever(),
-        smtp_server_tls.serve_forever())
+        config.mail_dir_path,
+        port=config.smtp_port,
+        host=config.host,
+        context=tls_context)
+
+    smtp_server_tls = await create_smtp_server_tls(config.mail_dir_path,
+                                                   port=config.smtp_port_tls,
+                                                   host=config.host,
+                                                   context=tls_context)
+
+    await asyncio.gather(pop_server.serve_forever(),
+                         smtp_server_starttls.serve_forever(),
+                         smtp_server_tls.serve_forever())
 
 
 def main():
-    args = parse_args()
-    tls_context = create_tls_context(args.certfile, args.keyfile)
+    config_path = sys.argv[1]
+    parser = ArgumentParser()
+    parser.add_argument("config_path")
+    args = parser.parse_args()
+    config = Config(open(args.config_path).read())
+
     setup_logging(args)
     loop = asyncio.get_event_loop()
-    loop.set_debug(args.debug)
-    asyncio.run(a_main(args, tls_context))
+    loop.set_debug(config.debug)
+
+    tls_context = create_tls_context(config.certfile, config.keyfile)
+
+    asyncio.run(a_main(config, tls_context))
 
 
 if __name__ == '__main__':
