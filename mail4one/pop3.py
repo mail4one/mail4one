@@ -8,42 +8,11 @@ from hashlib import sha256
 from pathlib import Path
 from typing import ClassVar, List, Set
 from .config import User
-from .pwhash import parse_hash, check_pass
+from .pwhash import parse_hash, check_pass, PWInfo
 from asyncio import StreamReader, StreamWriter
 
 from .poputils import InvalidCommand, parse_command, err, Command, ClientQuit, ClientError, AuthError, ok, msg, end, \
     Request, MailEntry, get_mail, get_mails_list, MailList
-
-
-def add_season(content: bytes, season: bytes):
-    return sha256(season + content).digest()
-
-
-# noinspection PyProtectedMember
-@dataclass
-class Session:
-    _reader: StreamReader
-    _writer: asyncio.StreamWriter
-    username: str
-    mbox: str
-
-    # common state
-    all_sessions: ClassVar[Set] = set()
-    mails_path: ClassVar[Path] = Path("")
-    users: ClassVar[list[User]] = list()
-    current_session: ClassVar = ContextVar("session")
-
-    @classmethod
-    def get(cls):
-        return cls.current_session.get()
-
-    @classmethod
-    def reader(cls):
-        return cls.get()._reader
-
-    @classmethod
-    def writer(cls):
-        return cls.get()._writer
 
 
 async def next_req():
@@ -254,12 +223,13 @@ async def start_session():
         assert username is not None
         config().loggedin_users.add(username)
         _, mbox = config().users[username]
-        deleted_items_path = config().mails_path/ mbox / username
+        deleted_items_path = config().mails_path / mbox / username
         logging.info(f"User:{username} logged in successfully")
 
         existing_deleted_items: Set = get_deleted_items(deleted_items_path)
 
-        new_deleted_items: Set = await transaction_stage(existing_deleted_items)
+        new_deleted_items: Set = await transaction_stage(existing_deleted_items
+                                                         )
         logging.info(
             f"{username=} completed transactions. Deleted:{len(new_deleted_items)}"
         )
@@ -300,11 +270,12 @@ class State:
     mbox: str = ""
 
 
-@dataclass
 class Config:
-    mails_path: Path
-    users: dict[str, tuple[pwhash.PWInfo, str]]
-    loggedin_users: set[str] = set()
+
+    def __init__(self, mails_path: Path, users: dict[str, tuple[PWInfo, str]]):
+        self.mails_path = mails_path
+        self.users = users
+        self.loggedin_users: set[str] = set()
 
 
 c_config = contextvars.ContextVar('config')
@@ -336,11 +307,11 @@ def make_pop_server_callback(dirpath: Path, users: list[User],
     return session_cb
 
 
-async def create_pop_server(dirpath: Path,
+async def create_pop_server(host: str,
                             port: int,
+                            mails_path: Path,
                             users: list[User],
-                            host="",
-                            context: ssl.SSLContext = None,
+                            ssl_context: ssl.SSLContext = None,
                             timeout_seconds: int = 60):
     logging.info(
         f"Starting POP3 server {dirpath=}, {host=}, {port=}, {timeout_seconds=}, ssl={context != None}"

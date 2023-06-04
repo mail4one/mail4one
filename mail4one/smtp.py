@@ -23,6 +23,7 @@ class MaildirCRLF(mailbox.Maildir):
 
 
 class MailboxCRLF(Mailbox):
+
     def __init__(self, mail_dir: Path):
         super().__init__(mail_dir)
         for sub in ('new', 'tmp', 'cur'):
@@ -50,23 +51,37 @@ def protocol_factory(dirpath: Path):
     logging.info("Got smtp client cb")
     try:
         handler = MailboxCRLF(dirpath)
-        smtp = SMTP(handler=handler, data_size_limit=DATA_SIZE_DEFAULT, enable_SMTPUTF8=True)
+        smtp = SMTP(handler=handler,
+                    data_size_limit=DATA_SIZE_DEFAULT,
+                    enable_SMTPUTF8=True)
     except Exception as e:
         logging.error("Something went wrong", e)
         raise
     return smtp
 
 
-async def create_smtp_server_starttls(dirpath: Path, port: int, host="", context: ssl.SSLContext = None):
+async def create_smtp_server_starttls(dirpath: Path,
+                                      port: int,
+                                      host="",
+                                      context: ssl.SSLContext = None):
     loop = asyncio.get_event_loop()
-    return await loop.create_server(partial(protocol_factory_starttls, dirpath, context),
-                                    host=host, port=port, start_serving=False)
+    return await loop.create_server(partial(protocol_factory_starttls, dirpath,
+                                            context),
+                                    host=host,
+                                    port=port,
+                                    start_serving=False)
 
 
-async def create_smtp_server_tls(dirpath: Path, port: int, host="", context: ssl.SSLContext = None):
+async def create_smtp_server_tls(dirpath: Path,
+                                 port: int,
+                                 host="",
+                                 context: ssl.SSLContext = None):
     loop = asyncio.get_event_loop()
     return await loop.create_server(partial(protocol_factory, dirpath),
-                                    host=host, port=port, ssl=context, start_serving=False)
+                                    host=host,
+                                    port=port,
+                                    ssl=context,
+                                    start_serving=False)
 
 
 async def a_main(*args, **kwargs):

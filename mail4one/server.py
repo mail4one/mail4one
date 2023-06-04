@@ -1,8 +1,4 @@
 import asyncio
-# Though we don't use requests, without the below import, we crash https://stackoverflow.com/a/13057751
-# When running on privilege port after dropping privileges.
-# noinspection PyUnresolvedReferences
-import encodings.idna
 import logging
 import os
 import ssl
@@ -22,27 +18,6 @@ def create_tls_context(certfile, keyfile):
     return context
 
 
-def parse_args():
-    parser = ArgumentParser()
-    parser.add_argument('--certfile')
-    parser.add_argument('--keyfile')
-    parser.add_argument('--password_hash')
-    parser.add_argument("mail_dir_path")
-
-    args = parser.parse_args()
-    args.mail_dir_path = Path(args.mail_dir_path)
-
-    # Hardcoded args
-    args.host = '0.0.0.0'
-    args.smtp_port = 25
-    args.smtp_port_tls = 465
-    args.smtp_port_submission = 587
-    args.pop_port = 995
-    args.smtputf8 = True
-    args.debug = True
-    return args
-
-
 def setup_logging(args):
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -51,11 +26,13 @@ def setup_logging(args):
 
 
 async def a_main(config, tls_context):
-    pop_server = await create_pop_server(config.mails_path,
-                                         port=config.pop_port,
-                                         host=config.host,
-                                         context=tls_context,
-                                         users=config.users)
+    pop_server = await create_pop_server(
+        host=config.host,
+        port=config.pop_port,
+        mails_path=config.mails_path,
+        users=config.users,
+        ssl_context=tls_context,
+        timeout_seconds=config.pop_timeout_seconds)
 
     smtp_server_starttls = await create_smtp_server_starttls(
         config.mail_dir_path,
@@ -74,7 +51,6 @@ async def a_main(config, tls_context):
 
 
 def main():
-    config_path = sys.argv[1]
     parser = ArgumentParser()
     parser.add_argument("config_path")
     args = parser.parse_args()

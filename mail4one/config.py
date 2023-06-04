@@ -33,6 +33,7 @@ class Config(Jata):
     smtp_port_tls = 465
     smtp_port_submission = 587
     pop_port = 995
+    pop_timeout_seconds = 60
     smtputf8 = True
     rules: list[Rule]
     boxes: list[Mbox]
