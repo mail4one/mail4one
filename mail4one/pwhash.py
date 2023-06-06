@@ -29,7 +29,7 @@ def gen_pwhash(password: str) -> str:
 
 class PWInfo:
 
-    def __init__(self, salt, sh):
+    def __init__(self, salt: bytes, sh: bytes):
         self.salt = salt
         self.scrypt_hash = sh
 
@@ -52,3 +52,14 @@ def check_pass(password: str, pwinfo: PWInfo) -> bool:
                                         n=SCRYPT_N,
                                         r=SCRYPT_R,
                                         p=SCRYPT_P)
+
+
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) == 2:
+        print(gen_pwhash(sys.argv[1]))
+    elif len(sys.argv) == 3:
+        ok = check_pass(sys.argv[1], parse_hash(sys.argv[2]))
+        print("OK" if ok else "NOT OK")
+    else:
+        print("Usage: python3 -m mail4one.pwhash <password> [password_hash]", file=sys.stderr)
