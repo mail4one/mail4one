@@ -1,18 +1,20 @@
 import os
 from hashlib import scrypt
-from struct import pack, unpack
 from base64 import b32encode, b32decode
 
 # Links
 # https://pkg.go.dev/golang.org/x/crypto/scrypt#Key
 # https://crypto.stackexchange.com/a/35434
 
+# Doubling N causes Memory limit exceeded
 SCRYPT_N = 16384
 SCRYPT_R = 8
 SCRYPT_P = 1
+
+# If any of above parameters change, version will be incremented
 VERSION = b'\x01'
-SALT_LEN = 32
-PACK_FMT = f"<c{SALT_LEN}s64slhh"
+SALT_LEN = 30
+KEY_LEN = 64  # This is python default
 
 
 def gen_pwhash(password: str) -> str:
@@ -21,10 +23,9 @@ def gen_pwhash(password: str) -> str:
                 salt=salt,
                 n=SCRYPT_N,
                 r=SCRYPT_R,
-                p=SCRYPT_P)
-    pack_bytes = pack(PACK_FMT, VERSION, salt, sh, SCRYPT_N, SCRYPT_R,
-                      SCRYPT_P)
-    return b32encode(pack_bytes).decode()
+                p=SCRYPT_P,
+                dklen=KEY_LEN)
+    return b32encode(VERSION + salt + sh).decode()
 
 
 class PWInfo:
@@ -34,14 +35,17 @@ class PWInfo:
         self.scrypt_hash = sh
 
 
-def parse_hash(pwhash: str) -> PWInfo:
-    decoded = b32decode(pwhash.encode())
-    ver, salt, sh, n, r, p = unpack(PACK_FMT, decoded)
-    if not (ver, n, r, p, len(salt)) == (VERSION, SCRYPT_N, SCRYPT_R, SCRYPT_P,
-                                         SALT_LEN):
+def parse_hash(pwhash_str: str) -> PWInfo:
+    pwhash = b32decode(pwhash_str.encode())
+
+    if not len(pwhash) == 1 + SALT_LEN + KEY_LEN:
         raise Exception(
-            f"Invalid hash: {ver=}, {n=}, {r=}, {p=}, f{len(salt)=} != {VERSION=}, {SCRYPT_N=}, {SCRYPT_R=}, {SCRYPT_P=}, {SALT_LEN=}"
-        )
+            f"Invalid hash size, {len(pwhash)} !=  {1 + SALT_LEN + KEY_LEN}")
+
+    if (ver := pwhash[0:1]) != VERSION:
+        raise Exception(f"Invalid hash version, {ver!r} !=  {VERSION!r}")
+
+    salt, sh = pwhash[1:SALT_LEN + 1], pwhash[-KEY_LEN:]
     return PWInfo(salt, sh)
 
 
@@ -51,7 +55,8 @@ def check_pass(password: str, pwinfo: PWInfo) -> bool:
                                         salt=pwinfo.salt,
                                         n=SCRYPT_N,
                                         r=SCRYPT_R,
-                                        p=SCRYPT_P)
+                                        p=SCRYPT_P,
+                                        dklen=KEY_LEN)
 
 
 if __name__ == '__main__':
@@ -62,4 +67,5 @@ if __name__ == '__main__':
         ok = check_pass(sys.argv[1], parse_hash(sys.argv[2]))
         print("OK" if ok else "NOT OK")
     else:
-        print("Usage: python3 -m mail4one.pwhash <password> [password_hash]", file=sys.stderr)
+        print("Usage: python3 -m mail4one.pwhash <password> [password_hash]",
+              file=sys.stderr)
