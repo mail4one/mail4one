@@ -246,7 +246,7 @@ async def start_session():
 def parse_users(users: list[User]):
 
     def inner():
-        for user in Users:
+        for user in users:
             user = User(user)
             pwinfo = parse_hash(user.password_hash)
             yield user.username, (pwinfo, user.mbox)
