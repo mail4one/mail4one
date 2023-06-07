@@ -32,7 +32,7 @@ class MailboxCRLF(Mailbox):
         self.mailbox = MaildirCRLF(mail_dir)
 
 
-def protocol_factory_starttls(dirpath: Path, context: ssl.SSLContext = None):
+def protocol_factory_starttls(dirpath: Path, context: ssl.SSLContext | None = None):
     logging.info("Got smtp client cb")
     try:
         handler = MailboxCRLF(dirpath)
@@ -63,7 +63,7 @@ def protocol_factory(dirpath: Path):
 async def create_smtp_server_starttls(dirpath: Path,
                                       port: int,
                                       host="",
-                                      context: ssl.SSLContext = None):
+                                      context: ssl.SSLContext | None= None):
     loop = asyncio.get_event_loop()
     return await loop.create_server(partial(protocol_factory_starttls, dirpath,
                                             context),
@@ -75,7 +75,7 @@ async def create_smtp_server_starttls(dirpath: Path,
 async def create_smtp_server_tls(dirpath: Path,
                                  port: int,
                                  host="",
-                                 context: ssl.SSLContext = None):
+                                 context: ssl.SSLContext | None= None):
     loop = asyncio.get_event_loop()
     return await loop.create_server(partial(protocol_factory, dirpath),
                                     host=host,

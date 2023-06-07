@@ -6,7 +6,6 @@ import contextvars
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
-from typing import ClassVar, List, Set
 from .config import User
 from .pwhash import parse_hash, check_pass, PWInfo
 from asyncio import StreamReader, StreamWriter
@@ -160,7 +159,7 @@ def trans_command_noop(_, __):
     write(ok("Hmm"))
 
 
-async def process_transactions(mails_list: List[MailEntry]):
+async def process_transactions(mails_list: list[MailEntry]):
     mails = MailList(mails_list)
 
     def reset(_, __):
@@ -202,7 +201,7 @@ def get_deleted_items(deleted_items_path: Path):
     return set()
 
 
-def save_deleted_items(deleted_items_path: Path, deleted_items: Set):
+def save_deleted_items(deleted_items_path: Path, deleted_items: set[str]):
     with deleted_items_path.open(mode="w") as f:
         f.writelines(f"{did}\n" for did in deleted_items)
 
@@ -271,14 +270,14 @@ class Config:
         self.loggedin_users: set[str] = set()
 
 
-c_config = contextvars.ContextVar('config')
+c_config: contextvars.ContextVar = contextvars.ContextVar('config')
 
 
 def config() -> Config:
     return c_config.get()
 
 
-c_state = contextvars.ContextVar('state')
+c_state: contextvars.ContextVar = contextvars.ContextVar('state')
 
 
 def state() -> State:
@@ -295,7 +294,7 @@ def make_pop_server_callback(mails_path: Path, users: list[User],
         try:
             return await asyncio.wait_for(start_session(), timeout_seconds)
         finally:
-            stream_writer.close()
+            writer.close()
 
     return session_cb
 
@@ -304,7 +303,7 @@ async def create_pop_server(host: str,
                             port: int,
                             mails_path: Path,
                             users: list[User],
-                            ssl_context: ssl.SSLContext = None,
+                            ssl_context: ssl.SSLContext | None = None,
                             timeout_seconds: int = 60):
     logging.info(
         f"Starting POP3 server {host=}, {port=}, {mails_path=}, {len(users)=}, {ssl_context != None=}, {timeout_seconds=}"

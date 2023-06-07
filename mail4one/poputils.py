@@ -2,7 +2,6 @@ import os
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from typing import NewType, List
 
 
 class ClientError(Exception):
@@ -22,9 +21,6 @@ class InvalidCommand(ClientError):
 class AuthError(ClientError):
     RETRIES = 3
     pass
-
-
-User = NewType('User', str)
 
 
 class Command(Enum):
@@ -65,8 +61,8 @@ def err(arg):
     return f"-ERR {arg}\r\n".encode()
 
 
-def parse_command(line: bytes) -> Request:
-    line = line.decode()
+def parse_command(bline: bytes) -> Request:
+    line = bline.decode()
     if not line.endswith("\r\n"):
         raise ClientError("Invalid line ending")
 
@@ -112,13 +108,13 @@ def files_in_path(path):
     return []
 
 
-def get_mails_list(dirpath: Path) -> List[MailEntry]:
+def get_mails_list(dirpath: Path) -> list[MailEntry]:
     files = files_in_path(dirpath)
     entries = [MailEntry(filename, path) for filename, path in files]
     return entries
 
 
-def set_nid(entries: List[MailEntry]):
+def set_nid(entries: list[MailEntry]):
     entries.sort(reverse=True, key=lambda e: e.c_time)
     entries = sorted(entries, reverse=True, key=lambda e: e.c_time)
     for i, entry in enumerate(entries, start=1):
@@ -131,11 +127,12 @@ def get_mail(entry: MailEntry) -> bytes:
 
 
 class MailList:
-    def __init__(self, entries: List[MailEntry]):
+
+    def __init__(self, entries: list[MailEntry]):
         self.entries = entries
         set_nid(self.entries)
         self.mails_map = {str(e.nid): e for e in entries}
-        self.deleted_uids = set()
+        self.deleted_uids: set[str] = set()
 
     def delete(self, nid: str):
         self.deleted_uids.add(self.mails_map.pop(nid).uid)
@@ -149,4 +146,3 @@ class MailList:
     def compute_stat(self):
         entries = self.get_all()
         return len(entries), sum(entry.size for entry in entries)
-
