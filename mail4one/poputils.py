@@ -11,6 +11,9 @@ class ClientError(Exception):
 class ClientQuit(ClientError):
     pass
 
+class ClientDisconnected(ClientError):
+    pass
+
 
 class InvalidCommand(ClientError):
     RETRIES = 3

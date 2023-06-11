@@ -3,14 +3,16 @@ import asyncio
 import logging
 from .pop3 import create_pop_server
 from .config import User
+from pathlib import Path
 
 
 class TestPop3(unittest.IsolatedAsyncioTestCase):
 
-    def setUp(self):
-        logging.basicConfig(level=logging.CRITICAL)
+    def setUp(self) -> None:
+        logging.basicConfig(level=logging.DEBUG)
 
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
+        logging.debug("at asyncSetUp")
         test_hash = "".join((l.strip() for l in """
         AFTY5EVN7AX47ZL7UMH3BETYWFBTAV3XHR73CEFAJBPN2NIHPWD
         ZHV2UQSMSPHSQQ2A2BFQBNC77VL7F2UKATQNJZGYLCSU6C43UQD
@@ -21,12 +23,13 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
         ]
         pop_server = await create_pop_server(host='127.0.0.1',
                                              port=7995,
-                                             mails_path='w.tmp',
+                                             mails_path=Path('w.tmp'),
                                              users=users)
         self.task = asyncio.create_task(pop_server.serve_forever())
-        self.reader, self.writer = await asyncio.open_connection('127.0.0.1', 7995)
+        self.reader, self.writer = await asyncio.open_connection(
+            '127.0.0.1', 7995)
 
-    async def test_QUIT(self):
+    async def test_QUIT(self) -> None:
         dialog = """
         S: +OK Server Ready
         C: QUIT
@@ -34,7 +37,7 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
         """
         await self.dialog_checker(dialog)
 
-    async def test_BAD(self):
+    async def test_BAD(self) -> None:
         dialog = """
         S: +OK Server Ready
         C: HELO
@@ -49,19 +52,25 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
         # TODO fix
         # self.assertTrue(reader.at_eof(), "server should close the connection")
 
-    async def test_AUTH(self):
+    async def do_login(self) -> None:
         dialog = """
         S: +OK Server Ready
         C: USER foobar
         S: +OK Welcome
         C: PASS helloworld
         S: +OK Login successful
+        """
+        await self.dialog_checker(dialog)
+
+    async def test_AUTH(self) -> None:
+        await self.do_login()
+        dialog = """
         C: QUIT
         S: +OK Bye
         """
         await self.dialog_checker(dialog)
 
-    async def test_dupe_AUTH(self):
+    async def test_dupe_AUTH(self) -> None:
         r1, w1 = await asyncio.open_connection('127.0.0.1', 7995)
         r2, w2 = await asyncio.open_connection('127.0.0.1', 7995)
         dialog = """
@@ -83,7 +92,15 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
         await self.dialog_checker_impl(r1, w1, end_dialog)
         await self.dialog_checker_impl(r2, w2, end_dialog)
 
-    async def test_CAPA(self):
+    async def test_STAT(self) -> None:
+        await self.do_login()
+        dialog = """
+        C: STAT
+        S: +OK Bye
+        """
+        await self.dialog_checker(dialog)
+
+    async def test_CAPA(self) -> None:
         dialog = """
         S: +OK Server Ready
         C: CAPA
@@ -95,16 +112,18 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
         """
         await self.dialog_checker(dialog)
 
-    async def asyncTearDown(self):
+    async def asyncTearDown(self) -> None:
+        logging.debug("at teardown")
         self.writer.close()
         await self.writer.wait_closed()
         self.task.cancel("test done")
 
-    async def dialog_checker(self, dialog: str):
+    async def dialog_checker(self, dialog: str) -> None:
         await self.dialog_checker_impl(self.reader, self.writer, dialog)
 
     async def dialog_checker_impl(self, reader: asyncio.StreamReader,
-                             writer: asyncio.StreamWriter, dialog: str):
+                                  writer: asyncio.StreamWriter,
+                                  dialog: str) -> None:
         for line in dialog.splitlines():
             line = line.strip()
             if not line:

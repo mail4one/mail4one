@@ -3,6 +3,7 @@ import logging
 import os
 import ssl
 import contextvars
+import contextlib
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -10,15 +11,18 @@ from .config import User
 from .pwhash import parse_hash, check_pass, PWInfo
 from asyncio import StreamReader, StreamWriter
 
-from .poputils import InvalidCommand, parse_command, err, Command, ClientQuit, ClientError, AuthError, ok, msg, end, \
-    Request, MailEntry, get_mail, get_mails_list, MailList
+from .poputils import InvalidCommand, parse_command, err, Command, \
+        ClientQuit, ClientDisconnected, ClientError, AuthError, ok, \
+        msg, end, Request, MailEntry, get_mail, get_mails_list, MailList
 
 
 async def next_req() -> Request:
     for _ in range(InvalidCommand.RETRIES):
         line = await state().reader.readline()
-        # logging.debug(f"Client: {line}")
+        logging.debug(f"Client: {line!r}")
         if not line:
+            if state().reader.at_eof():
+                raise ClientDisconnected
             continue
         try:
             request: Request = parse_command(line)
@@ -79,19 +83,20 @@ async def auth_stage() -> None:
                 write(end())
             else:
                 await handle_user_pass_auth(req)
-                if (username:=state().username) in config().loggedin_users:
+                if state().username in config().loggedin_users:
                     logging.warning(
-                        f"User: {username} already has an active session")
+                        f"User: {state().username} already has an active session")
                     raise AuthError("Already logged in")
                 else:
-                    config().loggedin_users.add(username)
+                    config().loggedin_users.add(state().username)
                     write(ok("Login successful"))
+                    return
         except AuthError as ae:
             write(err(f"Auth Failed: {ae}"))
         except ClientQuit as c:
             write(ok("Bye"))
             logging.warning("Client has QUIT before auth succeeded")
-            raise ClientError from c
+            raise
     else:
         raise ClientError("Failed to authenticate")
 
@@ -201,7 +206,8 @@ def get_deleted_items(deleted_items_path: Path) -> set[str]:
     return set()
 
 
-def save_deleted_items(deleted_items_path: Path, deleted_items: set[str]) -> None:
+def save_deleted_items(deleted_items_path: Path,
+                       deleted_items: set[str]) -> None:
     with deleted_items_path.open(mode="w") as f:
         f.writelines(f"{did}\n" for did in deleted_items)
 
@@ -232,6 +238,12 @@ async def start_session() -> None:
         assert state().mbox
         await transaction_stage()
         logging.info(f"User:{state().username} done")
+    except ClientDisconnected as c:
+        logging.info("Client disconnected")
+        pass
+    except ClientQuit:
+        logging.info("Client QUIT")
+        pass
     except ClientError as c:
         write(err("Something went wrong"))
         logging.error(f"Unexpected client error: {c}")
@@ -239,7 +251,7 @@ async def start_session() -> None:
         logging.error(f"Serious client error: {e}")
         raise
     finally:
-        if state().username:
+        with contextlib.suppress(KeyError):
             config().loggedin_users.remove(state().username)
 
 
@@ -295,6 +307,7 @@ def make_pop_server_callback(mails_path: Path, users: list[User],
             return await asyncio.wait_for(start_session(), timeout_seconds)
         finally:
             writer.close()
+            await writer.wait_closed()
 
     return session_cb
 
