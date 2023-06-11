@@ -54,7 +54,7 @@ def setUpModule() -> None:
         f.write(TESTMAIL)
     with open(MAILS_PATH / TEST_MBOX/ 'new/msg2.eml', 'wb') as f:
         f.write(TESTMAIL)
-    print(MAILS_PATH)
+    logging.debug(MAILS_PATH)
 
 
 def tearDownModule():
@@ -144,6 +144,47 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
         """
         await self.dialog_checker(dialog)
 
+    async def test_NOOP(self) -> None:
+        await self.do_login()
+        dialog = """
+        C: NOOP
+        S: +OK Hmm
+        """
+        await self.dialog_checker(dialog)
+
+    async def test_LIST(self) -> None:
+        await self.do_login()
+        dialog = """
+        C: LIST
+        S: +OK Mails follow
+        S: 1 436
+        S: 2 436
+        S: .
+        """
+        await self.dialog_checker(dialog)
+
+    async def test_UIDL(self) -> None:
+        await self.do_login()
+        dialog = """
+        C: UIDL
+        S: +OK Mails follow
+        S: 1 msg2.eml
+        S: 2 msg1.eml
+        S: .
+        """
+        await self.dialog_checker(dialog)
+
+    async def test_RETR(self) -> None:
+        await self.do_login()
+        dialog = """
+        C: RETR 1
+        S: +OK Contents follow
+        """
+        for l in TESTMAIL.splitlines():
+            dialog += f"S: {l.decode()}\n"
+        dialog += "S: ."
+        await self.dialog_checker(dialog)
+
     async def test_CAPA(self) -> None:
         dialog = """
         S: +OK Server Ready
@@ -172,9 +213,9 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
             line = line.strip()
             if not line:
                 continue
-            side, data_str = line.split(maxsplit=1)
+            side, data_str = line[:3], line[3:]
             data = f"{data_str}\r\n".encode()
-            if side == "C:":
+            if side == "C: ":
                 writer.write(data)
             else:
                 resp = await reader.readline()
