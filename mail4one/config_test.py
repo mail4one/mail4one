@@ -61,12 +61,12 @@ class TestConfig(unittest.TestCase):
 
     def test_parse_rules(self) -> None:
         cfg = config.Config(TEST_CONFIG)
-        op = config.parse_rules(cfg)
+        op = config.parse_checkers(cfg)
         self.assertEqual(len(op), 3)
 
     def test_get_mboxes(self) -> None:
         cfg = config.Config(TEST_CONFIG)
-        rules = config.parse_rules(cfg)
+        rules = config.parse_checkers(cfg)
         self.assertEqual(config.get_mboxes("foo@bar.com", rules), ['spam'])
         self.assertEqual(config.get_mboxes("foo@mydomain.com", rules), ['all'])
         self.assertEqual(config.get_mboxes("first.last@mydomain.com", rules),

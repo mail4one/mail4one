@@ -51,7 +51,11 @@ class Config(Jata):
     matches: list[Match]
 
 
-def parse_rules(cfg: Config) -> list[tuple[str, Callable[[str], bool], bool]]:
+CheckerFn = Callable[[str], bool]
+Checker = tuple[str, CheckerFn, bool]
+
+
+def parse_checkers(cfg: Config) -> list[Checker]:
 
     def make_match_fn(m: Match):
         if m.addrs and m.addr_rexs:
@@ -71,28 +75,27 @@ def parse_rules(cfg: Config) -> list[tuple[str, Callable[[str], bool], bool]]:
     }
     matches[DEFAULT_MATCH_ALL] = lambda _: True
 
-    def flat_rules():
-        for mbox in cfg.boxes:
-            for rule in mbox.rules:
-                rule = Rule(rule)
-                fn = matches[rule.match_name]
-                if rule.negate:
-                    match_fn = lambda malias, fn=fn: not fn(malias)
-                else:
-                    match_fn = fn
-                yield (mbox.name, match_fn, rule.stop_check)
+    def make_checker(mbox_name: str, rule: Rule) -> Checker:
+        fn = matches[rule.match_name]
+        if rule.negate:
+            match_fn = lambda malias: not fn(malias)
+        else:
+            match_fn = fn
+        return mbox_name, match_fn, rule.stop_check
 
-    return list(flat_rules())
+    return [
+        make_checker(mbox.name, Rule(rule)) for mbox in cfg.boxes
+        for rule in mbox.rules
+    ]
 
 
-def get_mboxes(
-        addr: str, rules: list[tuple[str, Callable[[str], bool],
-                                     bool]]) -> list[str]:
+def get_mboxes(addr: str, checks: list[Checker]) -> list[str]:
 
     def inner():
-        for mbox, match_fn, stop_check in rules:
+        for mbox, match_fn, stop_check in checks:
             if match_fn(addr):
-                yield mbox
+                if mbox != DEFAULT_NULL_MBOX:
+                    yield mbox
                 if stop_check:
                     return
 
