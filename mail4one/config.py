@@ -6,8 +6,8 @@ from jata import Jata, MutableDefault
 
 class Match(Jata):
     name: str
-    addrs: list[str] = MutableDefault(lambda: [])
-    addr_rexs: list[str] = MutableDefault(lambda: [])
+    addrs: list[str] = MutableDefault(lambda: []) # type: ignore
+    addr_rexs: list[str] = MutableDefault(lambda: []) # type: ignore
 
 
 DEFAULT_MATCH_ALL = "default_match_all"
@@ -100,3 +100,8 @@ def get_mboxes(addr: str, checks: list[Checker]) -> list[str]:
                     return
 
     return list(inner())
+
+
+def gen_addr_to_mboxes(cfg: Config) -> Callable[[str], [str]]:
+    checks = parse_checkers(cfg)
+    return lambda addr: get_mboxes(addr, checks)
