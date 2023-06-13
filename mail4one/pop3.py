@@ -317,7 +317,7 @@ async def create_pop_server(host: str,
                             mails_path: Path,
                             users: list[User],
                             ssl_context: ssl.SSLContext | None = None,
-                            timeout_seconds: int = 60):
+                            timeout_seconds: int = 60) -> asyncio.Server:
     logging.info(
         f"Starting POP3 server {host=}, {port=}, {mails_path=}, {len(users)=}, {ssl_context != None=}, {timeout_seconds=}"
     )

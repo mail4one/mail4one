@@ -7,7 +7,7 @@ import os
 
 from pathlib import Path
 
-from .smtp import create_smtp_server_tls
+from .smtp import create_smtp_server
 
 TEST_MBOX = 'foobar_mails'
 MAILS_PATH: Path
@@ -28,7 +28,7 @@ class TestSMTP(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self) -> None:
         logging.basicConfig(level=logging.DEBUG)
-        smtp_server = await create_smtp_server_tls(
+        smtp_server = await create_smtp_server(
             host="127.0.0.1",
             port=7996,
             mails_path=MAILS_PATH,

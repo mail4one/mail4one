@@ -55,7 +55,7 @@ class MyHandler(AsyncMessage):
 
 def protocol_factory_starttls(mails_path: Path,
                               mbox_finder: Callable[[str], [str]],
-                              context: ssl.SSLContext | None = None):
+                              context: ssl.SSLContext):
     logging.info("Got smtp client cb starttls")
     try:
         handler = MyHandler(mails_path, mbox_finder)
@@ -84,25 +84,25 @@ async def create_smtp_server_starttls(host: str,
                                       port: int,
                                       mails_path: Path,
                                       mbox_finder: Callable[[str], [str]],
-                                      context: ssl.SSLContext | None = None):
+                                      ssl_context: ssl.SSLContext) -> asyncio.Server:
     loop = asyncio.get_event_loop()
     return await loop.create_server(partial(protocol_factory_starttls,
-                                            mails_path, mbox_finder, context),
+                                            mails_path, mbox_finder, ssl_context),
                                     host=host,
                                     port=port,
                                     start_serving=False)
 
 
-async def create_smtp_server_tls(host: str,
+async def create_smtp_server(host: str,
                                  port: int,
                                  mails_path: Path,
                                  mbox_finder: Callable[[str], [str]],
-                                 context: ssl.SSLContext | None = None):
+                                 ssl_context: ssl.SSLContext | None = None) -> asyncio.Server:
     loop = asyncio.get_event_loop()
     return await loop.create_server(partial(protocol_factory, mails_path, mbox_finder),
                                     host=host,
                                     port=port,
-                                    ssl=context,
+                                    ssl=ssl_context,
                                     start_serving=False)
 
 

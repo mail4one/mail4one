@@ -6,13 +6,13 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
-from .smtp import create_smtp_server_starttls, create_smtp_server_tls
+from .smtp import create_smtp_server_starttls, create_smtp_server
 from .pop3 import create_pop_server
 
-from .config import Config
+from . import config
 
 
-def create_tls_context(certfile, keyfile):
+def create_tls_context(certfile, keyfile) -> ssl.SSLContext:
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain(certfile=certfile, keyfile=keyfile)
     return context
@@ -25,44 +25,82 @@ def setup_logging(args):
         logging.basicConfig(level=logging.INFO)
 
 
-async def a_main(config, tls_context):
-    pop_server = await create_pop_server(
-        host=config.host,
-        port=config.pop_port,
-        mails_path=config.mails_path,
-        users=config.users,
-        ssl_context=tls_context,
-        timeout_seconds=config.pop_timeout_seconds)
+async def a_main(cfg: config.Config) -> None:
 
-    smtp_server_starttls = await create_smtp_server_starttls(
-        config.mail_dir_path,
-        port=config.smtp_port,
-        host=config.host,
-        context=tls_context)
+    default_tls_context: ssl.SSLContext | None = None
 
-    smtp_server_tls = await create_smtp_server_tls(config.mail_dir_path,
-                                                   port=config.smtp_port_tls,
-                                                   host=config.host,
-                                                   context=tls_context)
+    if tls := cfg.default_tls:
+        default_tls_context = create_tls_context(tls.certfile, tls.keyfile)
 
-    await asyncio.gather(pop_server.serve_forever(),
-                         smtp_server_starttls.serve_forever(),
-                         smtp_server_tls.serve_forever())
+    def get_tls_context(tls: config.TLSCfg | str):
+        if tls == "default":
+            return default_tls_context
+        elif tls == "disable":
+            return None
+        else:
+            tls_cfg = config.TLSCfg(pop.tls)
+            return create_tls_context(tls_cfg.certfile, tls_cfg.keyfile)
+
+    def get_host(host):
+        if host == "default":
+            return cfg.default_host
+        else:
+            return host
+
+    mbox_finder = config.gen_addr_to_mboxes(cfg)
+    servers: list[asyncio.Server] = []
+
+    if cfg.pop:
+        pop = config.PopCfg(cfg.pop)
+        pop_server = await create_pop_server(
+            host=get_host(pop.host),
+            port=pop.port,
+            mails_path=Path(cfg.mails_path),
+            users=cfg.users,
+            ssl_context=get_tls_context(pop.tls),
+            timeout_seconds=pop.timeout_seconds)
+        servers.append(pop_server)
+
+    if cfg.smtp_starttls:
+        stls = config.SmtpStartTLSCfg(cfg.smtp_starttls)
+        stls_context = get_tls_context(stls.tls)
+        if not stls_context:
+            raise Exception("starttls requires ssl_context")
+        smtp_server_starttls = await create_smtp_server_starttls(
+            host=get_host(stls.host),
+            port=stls.port,
+            mails_path=Path(cfg.mails_path),
+            mbox_finder=mbox_finder,
+            ssl_context=stls_context)
+        servers.append(smtp_server_starttls)
+
+    if cfg.smtp:
+        smtp = config.SmtpCfg(cfg.smtp)
+        smtp_server = await create_smtp_server(host=get_host(smtp.host),
+                                               port=smtp.port,
+                                               mails_path=Path(cfg.mails_path),
+                                               mbox_finder=mbox_finder,
+                                               ssl_context=get_tls_context(
+                                                   smtp.tls))
+        servers.append(smtp_server)
+
+    if servers:
+        await asyncio.gather(server.serve_forever() for server in servers)
+    else:
+        logging.warn("Nothing to do!")
 
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("config_path")
+    parser.add_argument("config_path", type=Path)
     args = parser.parse_args()
-    config = Config(open(args.config_path).read())
+    config = Config(args.config_path.read_text())
 
     setup_logging(args)
     loop = asyncio.get_event_loop()
     loop.set_debug(config.debug)
 
-    tls_context = create_tls_context(config.certfile, config.keyfile)
-
-    asyncio.run(a_main(config, tls_context))
+    asyncio.run(a_main(config))
 
 
 if __name__ == '__main__':

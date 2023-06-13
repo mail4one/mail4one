@@ -6,8 +6,8 @@ from jata import Jata, MutableDefault
 
 class Match(Jata):
     name: str
-    addrs: list[str] = MutableDefault(lambda: []) # type: ignore
-    addr_rexs: list[str] = MutableDefault(lambda: []) # type: ignore
+    addrs: list[str] = MutableDefault(lambda: [])  # type: ignore
+    addr_rexs: list[str] = MutableDefault(lambda: [])  # type: ignore
 
 
 DEFAULT_MATCH_ALL = "default_match_all"
@@ -34,21 +34,46 @@ class User(Jata):
     mbox: str
 
 
-class Config(Jata):
+class TLSCfg(Jata):
     certfile: str
     keyfile: str
-    debug: bool = False
-    mails_path: str
-    host = '0.0.0.0'
-    smtp_port = 25
-    smtp_port_tls = 465
-    smtp_port_submission = 587
-    pop_port = 995
-    pop_timeout_seconds = 60
+
+
+class ServerCfg(Jata):
+    host: str = "default"
+    port: int
+    tls: TLSCfg | str = "default"
+
+
+class PopCfg(ServerCfg):
+    port = 995
+    timeout_seconds = 60
+
+
+class SmtpStartTLSCfg(ServerCfg):
     smtputf8 = True
+    port = 25
+
+
+class SmtpCfg(ServerCfg):
+    smtputf8 = True
+    port = 465
+
+
+class Config(Jata):
+    default_tls: TLSCfg | None
+    default_host: str = '0.0.0.0'
+
+    mails_path: str
     users: list[User]
     boxes: list[Mbox]
     matches: list[Match]
+    debug: bool = False
+
+    pop: PopCfg | None
+    smtp_starttls: SmtpStartTLSCfg | None
+    smtp: SmtpCfg | None
+    # smtp_port_submission = 587
 
 
 CheckerFn = Callable[[str], bool]
@@ -69,10 +94,7 @@ def parse_checkers(cfg: Config) -> list[Checker]:
         else:
             raise Exception("Neither addrs nor addr_rexs is set")
 
-    matches = {
-        m.name: make_match_fn(m)
-        for match in cfg.matches if (m := Match(match)) is not None
-    }
+    matches = {m.name: make_match_fn(Match(m)) for m in cfg.matches or []}
     matches[DEFAULT_MATCH_ALL] = lambda _: True
 
     def make_checker(mbox_name: str, rule: Rule) -> Checker:
@@ -84,7 +106,7 @@ def parse_checkers(cfg: Config) -> list[Checker]:
         return mbox_name, match_fn, rule.stop_check
 
     return [
-        make_checker(mbox.name, Rule(rule)) for mbox in cfg.boxes
+        make_checker(mbox.name, Rule(rule)) for mbox in cfg.boxes or []
         for rule in mbox.rules
     ]
 
