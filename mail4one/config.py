@@ -42,6 +42,7 @@ class TLSCfg(Jata):
 class ServerCfg(Jata):
     host: str = "default"
     port: int
+    # disabled: bool = False
     tls: TLSCfg | str = "default"
 
 
@@ -63,16 +64,16 @@ class SmtpCfg(ServerCfg):
 class Config(Jata):
     default_tls: TLSCfg | None
     default_host: str = '0.0.0.0'
-
-    mails_path: str
-    users: list[User]
-    boxes: list[Mbox]
-    matches: list[Match]
     debug: bool = False
 
-    pop: PopCfg | None
-    smtp_starttls: SmtpStartTLSCfg | None
-    smtp: SmtpCfg | None
+    mails_path: str
+    matches: list[Match]
+    boxes: list[Mbox]
+    users: list[User]
+
+    pop: PopCfg | None = None
+    smtp_starttls: SmtpStartTLSCfg | None = None
+    smtp: SmtpCfg | None = None
     # smtp_port_submission = 587
 
 

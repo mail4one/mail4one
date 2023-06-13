@@ -85,22 +85,22 @@ async def a_main(cfg: config.Config) -> None:
         servers.append(smtp_server)
 
     if servers:
-        await asyncio.gather(server.serve_forever() for server in servers)
+        await asyncio.gather(*[server.serve_forever() for server in servers])
     else:
         logging.warn("Nothing to do!")
 
 
-def main():
+def main() -> None:
     parser = ArgumentParser()
     parser.add_argument("config_path", type=Path)
     args = parser.parse_args()
-    config = Config(args.config_path.read_text())
+    cfg = config.Config(args.config_path.read_text())
 
-    setup_logging(args)
+    setup_logging(cfg)
     loop = asyncio.get_event_loop()
-    loop.set_debug(config.debug)
+    loop.set_debug(cfg.debug)
 
-    asyncio.run(a_main(config))
+    asyncio.run(a_main(cfg))
 
 
 if __name__ == '__main__':
