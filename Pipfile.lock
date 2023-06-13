@@ -26,11 +26,11 @@
         },
         "atpublic": {
             "hashes": [
-                "sha256:3098ee12d0107cc5009d61f4e80e5edcfac4cda2bdaa04644af75827cb121b18",
-                "sha256:37f714748e77b8a7b34d59b7b485fd452a0d5906be52cb1bd28d29a2bd84f295"
+                "sha256:0f40433219e124edf115c6c363808ca6f0e1cfa7d160d86b2fb94793086d1294",
+                "sha256:80057c55641253b86dcb68b524f82328172371b6547d4c7462a9127fbfbbabfc"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==3.1.1"
+            "markers": "python_version >= '3.8'",
+            "version": "==4.0"
         },
         "attrs": {
             "hashes": [
