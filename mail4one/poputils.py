@@ -118,8 +118,7 @@ def get_mails_list(dirpath: Path) -> list[MailEntry]:
 
 
 def set_nid(entries: list[MailEntry]):
-    entries.sort(reverse=True, key=lambda e: e.c_time)
-    entries = sorted(entries, reverse=True, key=lambda e: e.c_time)
+    entries.sort(reverse=True, key=lambda e: (e.c_time, e.uid))
     for i, entry in enumerate(entries, start=1):
         entry.nid = i
 

@@ -50,7 +50,7 @@ class MyHandler(AsyncMessage):
                 gen = BytesGenerator(fp, policy=email.policy.SMTP)
                 gen.flatten(m)
             for mbox in all_mboxes:
-                shutil.copy2(temp_email_path, self.mails_path / mbox / 'new')
+                shutil.copy(temp_email_path, self.mails_path / mbox / 'new')
 
 
 def protocol_factory_starttls(mails_path: Path,

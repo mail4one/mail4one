@@ -6,6 +6,12 @@ shell:
 test:
 	pipenv run python -m unittest discover
 
+docker-tests:
+	docker run --pull=always -v `pwd`:/app -w /app --rm -it python:3.11-alpine sh runtests.sh
+	docker run --pull=always -v `pwd`:/app -w /app --rm -it python:3.10-alpine sh runtests.sh
+	docker run --pull=always -v `pwd`:/app -w /app --rm -it python:3.11 sh runtests.sh
+	docker run --pull=always -v `pwd`:/app -w /app --rm -it python:3.10 sh runtests.sh
+
 requirements.txt: Pipfile.lock
 	pipenv requirements > requirements.txt
 
