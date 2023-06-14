@@ -9,6 +9,7 @@ test:
 build: clean
 	pipenv run python -m pip install -r <(pipenv requirements ) --target build
 	cp -r mail4one/ build/
+	pipenv run python -m compileall build/mail4one -f
 	pipenv run python -m zipapp \
 		--output mail4one.pyz \
 		--python "/usr/bin/env python3" \
