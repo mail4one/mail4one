@@ -1,4 +1,4 @@
-from .pwhash import gen_pwhash, parse_hash, check_pass, SALT_LEN, KEY_LEN
+from mail4one.pwhash import gen_pwhash, parse_hash, check_pass, SALT_LEN, KEY_LEN
 import unittest
 
 

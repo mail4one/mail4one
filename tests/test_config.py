@@ -1,6 +1,6 @@
 import unittest
 
-from . import config
+from mail4one import config
 
 TEST_CONFIG = """
 {

@@ -4,7 +4,7 @@ shell:
 	MYPYPATH=`pipenv --venv`/lib/python3.11/site-packages pipenv shell
 
 test:
-	pipenv run python -m unittest mail4one/*test.py
+	pipenv run python -m unittest discover
 
 build: clean
 	pipenv run python -m pip install -r <(pipenv requirements ) --target build

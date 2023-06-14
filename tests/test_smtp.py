@@ -7,7 +7,7 @@ import os
 
 from pathlib import Path
 
-from .smtp import create_smtp_server
+from mail4one.smtp import create_smtp_server
 
 TEST_MBOX = 'foobar_mails'
 MAILS_PATH: Path

@@ -4,8 +4,8 @@ import logging
 import tempfile
 import time
 import os
-from .pop3 import create_pop_server
-from .config import User
+from mail4one.pop3 import create_pop_server
+from mail4one.config import User
 from pathlib import Path
 
 TEST_HASH = "".join(c for c in """
