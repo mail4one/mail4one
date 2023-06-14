@@ -23,7 +23,7 @@ from aiosmtpd.smtp import Session as SMTPSession
 
 class MyHandler(AsyncMessage):
 
-    def __init__(self, mails_path: Path, mbox_finder: Callable[[str], [str]]):
+    def __init__(self, mails_path: Path, mbox_finder: Callable[[str], list[str]]):
         super().__init__()
         self.mails_path = mails_path
         self.mbox_finder = mbox_finder
@@ -54,7 +54,7 @@ class MyHandler(AsyncMessage):
 
 
 def protocol_factory_starttls(mails_path: Path,
-                              mbox_finder: Callable[[str], [str]],
+                              mbox_finder: Callable[[str], list[str]],
                               context: ssl.SSLContext):
     logging.info("Got smtp client cb starttls")
     try:
@@ -69,7 +69,7 @@ def protocol_factory_starttls(mails_path: Path,
     return smtp
 
 
-def protocol_factory(mails_path: Path, mbox_finder: Callable[[str], [str]]):
+def protocol_factory(mails_path: Path, mbox_finder: Callable[[str], list[str]]):
     logging.info("Got smtp client cb")
     try:
         handler = MyHandler(mails_path, mbox_finder)
@@ -83,7 +83,7 @@ def protocol_factory(mails_path: Path, mbox_finder: Callable[[str], [str]]):
 async def create_smtp_server_starttls(host: str,
                                       port: int,
                                       mails_path: Path,
-                                      mbox_finder: Callable[[str], [str]],
+                                      mbox_finder: Callable[[str], list[str]],
                                       ssl_context: ssl.SSLContext) -> asyncio.Server:
     loop = asyncio.get_event_loop()
     return await loop.create_server(partial(protocol_factory_starttls,
@@ -96,7 +96,7 @@ async def create_smtp_server_starttls(host: str,
 async def create_smtp_server(host: str,
                                  port: int,
                                  mails_path: Path,
-                                 mbox_finder: Callable[[str], [str]],
+                                 mbox_finder: Callable[[str], list[str]],
                                  ssl_context: ssl.SSLContext | None = None) -> asyncio.Server:
     loop = asyncio.get_event_loop()
     return await loop.create_server(partial(protocol_factory, mails_path, mbox_finder),

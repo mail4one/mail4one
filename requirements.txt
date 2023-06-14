@@ -1,0 +1,5 @@
+-i https://pypi.org/simple
+aiosmtpd==1.4.4.post2
+atpublic==4.0 ; python_version >= '3.8'
+attrs==23.1.0 ; python_version >= '3.7'
+python-jata==1.2

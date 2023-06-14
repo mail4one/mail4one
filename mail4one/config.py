@@ -125,6 +125,6 @@ def get_mboxes(addr: str, checks: list[Checker]) -> list[str]:
     return list(inner())
 
 
-def gen_addr_to_mboxes(cfg: Config) -> Callable[[str], [str]]:
+def gen_addr_to_mboxes(cfg: Config) -> Callable[[str], list[str]]:
     checks = parse_checkers(cfg)
     return lambda addr: get_mboxes(addr, checks)

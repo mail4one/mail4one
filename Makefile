@@ -6,11 +6,14 @@ shell:
 test:
 	pipenv run python -m unittest discover
 
-build: clean
-	pipenv run python -m pip install -r <(pipenv requirements ) --target build
+requirements.txt: Pipfile.lock
+	pipenv requirements > requirements.txt
+
+build: clean requirements.txt
+	python3 -m pip install -r requirements.txt --target build
 	cp -r mail4one/ build/
-	pipenv run python -m compileall build/mail4one -f
-	pipenv run python -m zipapp \
+	python3 -m compileall build/mail4one -f
+	python3 -m zipapp \
 		--output mail4one.pyz \
 		--python "/usr/bin/env python3" \
 		--main mail4one.server:main \
