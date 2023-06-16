@@ -5,11 +5,13 @@ import ssl
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
+from getpass import getpass
 
 from .smtp import create_smtp_server_starttls, create_smtp_server
 from .pop3 import create_pop_server
 
 from . import config
+from . import pwhash
 
 
 def create_tls_context(certfile, keyfile) -> ssl.SSLContext:
@@ -91,16 +93,49 @@ async def a_main(cfg: config.Config) -> None:
 
 
 def main() -> None:
-    parser = ArgumentParser()
-    parser.add_argument("config_path", type=Path)
+    parser = ArgumentParser(description="Personal Mail Server", epilog="See https://gitea.balki.me/balki/mail4one for more info")
+    parser.add_argument(
+        "-e",
+        "--echo_password",
+        action="store_true",
+        help="Show password in command line if -g without password is used")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("-c",
+                       "--config",
+                       metavar="CONFIG_PATH",
+                       type=Path,
+                       help="Run mail server with passed config")
+    group.add_argument("-g",
+                       "--genpwhash",
+                       nargs="?",
+                       dest="password",
+                       const="FROM_TERMINAL",
+                       metavar="PASSWORD",
+                       help="Generate password hash to add in config")
+    group.add_argument("-r",
+                       "--pwverify",
+                       dest="password_pwhash",
+                       nargs=2,
+                       metavar=("PASSWORD", "PWHASH"),
+                       help="Check if password matches password hash")
     args = parser.parse_args()
-    cfg = config.Config(args.config_path.read_text())
-
-    setup_logging(cfg)
-    loop = asyncio.get_event_loop()
-    loop.set_debug(cfg.debug)
-
-    asyncio.run(a_main(cfg))
+    if password := args.password:
+        if password == "FROM_TERMINAL":
+            if args.echo_password:
+                password = input("Enter password: ")
+            else:
+                password = getpass("Enter password: ")
+        print(pwhash.gen_pwhash(password))
+    elif args.password_pwhash:
+        password, phash = args.password_pwhash
+        if pwhash.check_pass(password, pwhash.parse_hash(phash)):
+            print("✓ password and hash match")
+        else:
+            print("✗ password and hash do not match")
+    else:
+        cfg = config.Config(args.config.read_text())
+        setup_logging(cfg)
+        asyncio.run(a_main(cfg), debug=cfg.debug)
 
 
 if __name__ == '__main__':
