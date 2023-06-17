@@ -1,15 +1,17 @@
 import asyncio
+import contextlib
+import contextvars
 import logging
 import os
 import ssl
-import contextvars
-import contextlib
+import uuid
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 from .config import User
 from .pwhash import parse_hash, check_pass, PWInfo
 from asyncio import StreamReader, StreamWriter
+import random
 
 from .poputils import (
     InvalidCommand,
@@ -31,10 +33,66 @@ from .poputils import (
 )
 
 
+@dataclass
+class State:
+    reader: StreamReader
+    writer: StreamWriter
+    ip: str
+    req_id: int
+    username: str = ""
+    mbox: str = ""
+
+
+class SharedState:
+
+    def __init__(self, mails_path: Path, users: dict[str, tuple[PWInfo, str]]):
+        self.mails_path = mails_path
+        self.users = users
+        self.loggedin_users: set[str] = set()
+        self.counter = random.randint(10000, 99999) * 100000
+
+    def next_id(self) -> int:
+        self.counter = self.counter + 1
+        return self.counter
+
+
+c_shared_state: contextvars.ContextVar = contextvars.ContextVar(
+    "pop_shared_state")
+
+
+def scfg() -> SharedState:
+    return c_shared_state.get()
+
+
+c_state: contextvars.ContextVar = contextvars.ContextVar("state")
+
+
+def state() -> State:
+    return c_state.get()
+
+
+class PopLogger(logging.LoggerAdapter):
+
+    def __init__(self):
+        super().__init__(logging.getLogger("pop3"), None)
+
+    def process(self, msg, kwargs):
+        state: State = c_state.get(None)
+        if not state:
+            return super().process(msg, kwargs)
+        user = "NA"
+        if state.username:
+            user = state.username
+        return super().process(f"{state.ip} {state.req_id} {user} {msg}", kwargs)
+
+
+logger = PopLogger()
+
+
 async def next_req() -> Request:
     for _ in range(InvalidCommand.RETRIES):
         line = await state().reader.readline()
-        logging.debug(f"Client: {line!r}")
+        logger.debug(f"Client: {line!r}")
         if not line:
             if state().reader.at_eof():
                 raise ClientDisconnected
@@ -54,19 +112,19 @@ async def next_req() -> Request:
 async def expect_cmd(*commands: Command) -> Request:
     req = await next_req()
     if req.cmd not in commands:
-        logging.error(f"Unexpected command: {req.cmd} is not in {commands}")
+        logger.error(f"Unexpected command: {req.cmd} is not in {commands}")
         raise ClientError
     return req
 
 
 def write(data) -> None:
-    logging.debug(f"Server: {data}")
+    logger.debug(f"Server: {data}")
     state().writer.write(data)
 
 
 def validate_password(username, password) -> None:
     try:
-        pwinfo, mbox = config().users[username]
+        pwinfo, mbox = scfg().users[username]
     except:
         raise AuthError("Invalid user pass")
 
@@ -84,7 +142,7 @@ async def handle_user_pass_auth(user_cmd) -> None:
     cmd = await expect_cmd(Command.PASS)
     password = cmd.arg1
     validate_password(username, password)
-    logging.info(f"{username=} has logged in successfully")
+    logger.info(f"{username=} has logged in successfully")
 
 
 async def auth_stage() -> None:
@@ -98,20 +156,20 @@ async def auth_stage() -> None:
                 write(end())
             else:
                 await handle_user_pass_auth(req)
-                if state().username in config().loggedin_users:
-                    logging.warning(
+                if state().username in scfg().loggedin_users:
+                    logger.warning(
                         f"User: {state().username} already has an active session"
                     )
                     raise AuthError("Already logged in")
                 else:
-                    config().loggedin_users.add(state().username)
+                    scfg().loggedin_users.add(state().username)
                     write(ok("Login successful"))
                     return
         except AuthError as ae:
             write(err(f"Auth Failed: {ae}"))
         except ClientQuit as c:
             write(ok("Bye"))
-            logging.warning("Client has QUIT before auth succeeded")
+            logger.warning("Client has QUIT before auth succeeded")
             raise
     else:
         raise ClientError("Failed to authenticate")
@@ -204,7 +262,7 @@ async def process_transactions(mails_list: list[MailEntry]) -> set[str]:
         except ClientQuit:
             write(ok("Bye"))
             return mails.deleted_uids
-        logging.debug(f"Request: {req}")
+        logger.debug(f"Request: {req}")
         try:
             func = handle_map[req.cmd]
         except KeyError:
@@ -229,46 +287,46 @@ def save_deleted_items(deleted_items_path: Path,
 
 
 async def transaction_stage() -> None:
-    deleted_items_path = config().mails_path / state().mbox / state().username
+    deleted_items_path = scfg().mails_path / state().mbox / state().username
     existing_deleted_items: set[str] = get_deleted_items(deleted_items_path)
     mails_list = [
         entry
-        for entry in get_mails_list(config().mails_path / state().mbox / "new")
+        for entry in get_mails_list(scfg().mails_path / state().mbox / "new")
         if entry.uid not in existing_deleted_items
     ]
 
     new_deleted_items: set[str] = await process_transactions(mails_list)
-    logging.info(f"completed transactions. Deleted:{len(new_deleted_items)}")
+    logger.info(f"completed transactions. Deleted:{len(new_deleted_items)}")
     if new_deleted_items:
         save_deleted_items(deleted_items_path,
                            existing_deleted_items.union(new_deleted_items))
 
-    logging.info(f"Saved deleted items")
+    logger.info(f"Saved deleted items")
 
 
 async def start_session() -> None:
-    logging.info("New session started")
+    logger.info("New session started")
     try:
         await auth_stage()
         assert state().username
         assert state().mbox
         await transaction_stage()
-        logging.info(f"User:{state().username} done")
+        logger.info(f"User:{state().username} done")
     except ClientDisconnected as c:
-        logging.info("Client disconnected")
+        logger.info("Client disconnected")
         pass
     except ClientQuit:
-        logging.info("Client QUIT")
+        logger.info("Client QUIT")
         pass
     except ClientError as c:
         write(err("Something went wrong"))
-        logging.error(f"Unexpected client error: {c}")
+        logger.error(f"Unexpected client error: {c}")
     except Exception as e:
-        logging.error(f"Serious client error: {e}")
+        logger.error(f"Serious client error: {e}")
         raise
     finally:
         with contextlib.suppress(KeyError):
-            config().loggedin_users.remove(state().username)
+            scfg().loggedin_users.remove(state().username)
 
 
 def parse_users(users: list[User]) -> dict[str, tuple[PWInfo, str]]:
@@ -282,43 +340,16 @@ def parse_users(users: list[User]) -> dict[str, tuple[PWInfo, str]]:
     return dict(inner())
 
 
-@dataclass
-class State:
-    reader: StreamReader
-    writer: StreamWriter
-    username: str = ""
-    mbox: str = ""
-
-
-class Config:
-
-    def __init__(self, mails_path: Path, users: dict[str, tuple[PWInfo, str]]):
-        self.mails_path = mails_path
-        self.users = users
-        self.loggedin_users: set[str] = set()
-
-
-c_config: contextvars.ContextVar = contextvars.ContextVar("config")
-
-
-def config() -> Config:
-    return c_config.get()
-
-
-c_state: contextvars.ContextVar = contextvars.ContextVar("state")
-
-
-def state() -> State:
-    return c_state.get()
-
-
 def make_pop_server_callback(mails_path: Path, users: list[User],
                              timeout_seconds: int):
-    config = Config(mails_path=mails_path, users=parse_users(users))
+    scfg = SharedState(mails_path=mails_path, users=parse_users(users))
 
     async def session_cb(reader: StreamReader, writer: StreamWriter):
-        c_config.set(config)
-        c_state.set(State(reader=reader, writer=writer))
+        c_shared_state.set(scfg)
+        ip, _ = writer.get_extra_info("peername")
+        c_state.set(
+            State(reader=reader, writer=writer, ip=ip, req_id=scfg.next_id()))
+        logger.info(f"Got pop server callback")
         try:
             return await asyncio.wait_for(start_session(), timeout_seconds)
         finally:

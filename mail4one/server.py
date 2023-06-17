@@ -20,17 +20,20 @@ def create_tls_context(certfile, keyfile) -> ssl.SSLContext:
     return context
 
 
-def setup_logging(args):
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
+def setup_logging(cfg: config.LogCfg):
+    logging_format = "%(asctime)s %(name)s %(levelname)s %(message)s @ %(filename)s:%(lineno)d"
+    if cfg.logfile == "STDOUT":
+        logging.basicConfig(level=cfg.level, format=logging_format)
     else:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(filename=cfg.logfile, level=cfg.level, format=logging_format)
+
 
 
 async def a_main(cfg: config.Config) -> None:
     default_tls_context: ssl.SSLContext | None = None
 
     if tls := cfg.default_tls:
+        logging.info(f"Initializing default tls {tls.certfile=}, {tls.keyfile=}")
         default_tls_context = create_tls_context(tls.certfile, tls.keyfile)
 
     def get_tls_context(tls: config.TLSCfg | str):
@@ -146,8 +149,9 @@ def main() -> None:
             print("✗ password and hash do not match")
     else:
         cfg = config.Config(args.config.read_text())
-        setup_logging(cfg)
-        asyncio.run(a_main(cfg), debug=cfg.debug)
+        setup_logging(config.LogCfg(cfg.logging))
+        logging.info(f"Starting mail4one {args.config=}")
+        asyncio.run(a_main(cfg))
 
 
 if __name__ == "__main__":

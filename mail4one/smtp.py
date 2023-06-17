@@ -13,12 +13,15 @@ from email.message import Message
 import email.policy
 from email.generator import BytesGenerator
 import tempfile
+import random
 
 from aiosmtpd.handlers import Mailbox, AsyncMessage
 from aiosmtpd.smtp import SMTP, DATA_SIZE_DEFAULT
 from aiosmtpd.smtp import SMTP as SMTPServer
 from aiosmtpd.smtp import Envelope as SMTPEnvelope
 from aiosmtpd.smtp import Session as SMTPSession
+
+logger = logging.getLogger("smtp")
 
 
 class MyHandler(AsyncMessage):
@@ -32,6 +35,7 @@ class MyHandler(AsyncMessage):
     async def handle_DATA(self, server: SMTPServer, session: SMTPSession,
                           envelope: SMTPEnvelope) -> str:
         self.rcpt_tos = envelope.rcpt_tos
+        self.peer = session.peer
         return await super().handle_DATA(server, session, envelope)
 
     async def handle_message(self, m: Message):  # type: ignore[override]
@@ -40,24 +44,29 @@ class MyHandler(AsyncMessage):
             for mbox in self.mbox_finder(addr):
                 all_mboxes.add(mbox)
         if not all_mboxes:
+            logger.warning(f"dropping message from: {self.peer}")
             return
         for mbox in all_mboxes:
             for sub in ("new", "tmp", "cur"):
                 sub_path = self.mails_path / mbox / sub
                 sub_path.mkdir(mode=0o755, exist_ok=True, parents=True)
         with tempfile.TemporaryDirectory() as tmpdir:
-            temp_email_path = Path(tmpdir) / f"{uuid.uuid4()}.eml"
+            filename = f"{uuid.uuid4()}.eml"
+            temp_email_path = Path(tmpdir) / filename
             with open(temp_email_path, "wb") as fp:
                 gen = BytesGenerator(fp, policy=email.policy.SMTP)
                 gen.flatten(m)
             for mbox in all_mboxes:
                 shutil.copy(temp_email_path, self.mails_path / mbox / "new")
+            logger.info(
+                f"Saved mail at {filename} addrs: {','.join(self.rcpt_tos)}, mboxes: {','.join(all_mboxes)} peer: {self.peer}"
+            )
 
 
 def protocol_factory_starttls(mails_path: Path,
                               mbox_finder: Callable[[str], list[str]],
                               context: ssl.SSLContext):
-    logging.info("Got smtp client cb starttls")
+    logger.info("Got smtp client cb starttls")
     try:
         handler = MyHandler(mails_path, mbox_finder)
         smtp = SMTP(
@@ -67,19 +76,19 @@ def protocol_factory_starttls(mails_path: Path,
             enable_SMTPUTF8=True,
         )
     except Exception as e:
-        logging.error("Something went wrong", e)
+        logger.error("Something went wrong", e)
         raise
     return smtp
 
 
 def protocol_factory(mails_path: Path, mbox_finder: Callable[[str],
                                                              list[str]]):
-    logging.info("Got smtp client cb")
+    logger.info("Got smtp client cb")
     try:
         handler = MyHandler(mails_path, mbox_finder)
         smtp = SMTP(handler=handler, enable_SMTPUTF8=True)
     except Exception as e:
-        logging.error("Something went wrong", e)
+        logger.error("Something went wrong", e)
         raise
     return smtp
 
@@ -91,6 +100,9 @@ async def create_smtp_server_starttls(
     mbox_finder: Callable[[str], list[str]],
     ssl_context: ssl.SSLContext,
 ) -> asyncio.Server:
+    logging.info(
+        f"Starting SMTP STARTTLS server {host=}, {port=}, {mails_path=}, {ssl_context != None=}"
+    )
     loop = asyncio.get_event_loop()
     return await loop.create_server(
         partial(protocol_factory_starttls, mails_path, mbox_finder,
@@ -108,6 +120,9 @@ async def create_smtp_server(
     mbox_finder: Callable[[str], list[str]],
     ssl_context: ssl.SSLContext | None = None,
 ) -> asyncio.Server:
+    logging.info(
+        f"Starting SMTP server {host=}, {port=}, {mails_path=}, {ssl_context != None=}"
+    )
     loop = asyncio.get_event_loop()
     return await loop.create_server(
         partial(protocol_factory, mails_path, mbox_finder),

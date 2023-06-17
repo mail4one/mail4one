@@ -3,6 +3,7 @@ import logging
 import unittest
 import smtplib
 import tempfile
+import contextlib
 import os
 
 from pathlib import Path
@@ -27,7 +28,6 @@ def setUpModule() -> None:
 class TestSMTP(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self) -> None:
-        logging.basicConfig(level=logging.DEBUG)
         smtp_server = await create_smtp_server(
             host="127.0.0.1",
             port=7996,
@@ -43,16 +43,15 @@ class TestSMTP(unittest.IsolatedAsyncioTestCase):
         Byee
         """
         msg = b"".join(l.strip() + b"\r\n" for l in msg.splitlines())
-        local_port: str
 
         def send_mail():
-            nonlocal local_port
-            server = smtplib.SMTP(host="127.0.0.1", port=7996)
-            server.sendmail("foo@sender.com", "foo@bar.com", msg)
-            _, local_port = server.sock.getsockname()
-            server.close()
+            with contextlib.closing(smtplib.SMTP(host="127.0.0.1",
+                                                 port=7996)) as client:
+                client.sendmail("foo@sender.com", "foo@bar.com", msg)
+                _, local_port = client.sock.getsockname()
+                return local_port
 
-        await asyncio.to_thread(send_mail)
+        local_port = await asyncio.to_thread(send_mail)
         expected = f"""From: foo@sender.com
         To: "foo@bar.com"
         X-Peer: ('127.0.0.1', {local_port})

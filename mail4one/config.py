@@ -1,5 +1,6 @@
 import json
 import re
+import logging
 from typing import Callable
 from jata import Jata, MutableDefault
 
@@ -61,10 +62,15 @@ class SmtpCfg(ServerCfg):
     port = 465
 
 
+class LogCfg(Jata):
+    logfile = "STDOUT"
+    level = "INFO"
+
+
 class Config(Jata):
     default_tls: TLSCfg | None
     default_host: str = "0.0.0.0"
-    debug: bool = False
+    logging: LogCfg | None = None
 
     mails_path: str
     matches: list[Match]
@@ -127,4 +133,5 @@ def get_mboxes(addr: str, checks: list[Checker]) -> list[str]:
 
 def gen_addr_to_mboxes(cfg: Config) -> Callable[[str], list[str]]:
     checks = parse_checkers(cfg)
+    logging.info(f"Parsed checkers from config, {len(checks)=}")
     return lambda addr: get_mboxes(addr, checks)
