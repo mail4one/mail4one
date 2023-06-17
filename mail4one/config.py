@@ -63,7 +63,7 @@ class SmtpCfg(ServerCfg):
 
 class Config(Jata):
     default_tls: TLSCfg | None
-    default_host: str = '0.0.0.0'
+    default_host: str = "0.0.0.0"
     debug: bool = False
 
     mails_path: str

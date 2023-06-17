@@ -28,7 +28,6 @@ def setup_logging(args):
 
 
 async def a_main(cfg: config.Config) -> None:
-
     default_tls_context: ssl.SSLContext | None = None
 
     if tls := cfg.default_tls:
@@ -60,7 +59,8 @@ async def a_main(cfg: config.Config) -> None:
             mails_path=Path(cfg.mails_path),
             users=cfg.users,
             ssl_context=get_tls_context(pop.tls),
-            timeout_seconds=pop.timeout_seconds)
+            timeout_seconds=pop.timeout_seconds,
+        )
         servers.append(pop_server)
 
     if cfg.smtp_starttls:
@@ -73,17 +73,19 @@ async def a_main(cfg: config.Config) -> None:
             port=stls.port,
             mails_path=Path(cfg.mails_path),
             mbox_finder=mbox_finder,
-            ssl_context=stls_context)
+            ssl_context=stls_context,
+        )
         servers.append(smtp_server_starttls)
 
     if cfg.smtp:
         smtp = config.SmtpCfg(cfg.smtp)
-        smtp_server = await create_smtp_server(host=get_host(smtp.host),
-                                               port=smtp.port,
-                                               mails_path=Path(cfg.mails_path),
-                                               mbox_finder=mbox_finder,
-                                               ssl_context=get_tls_context(
-                                                   smtp.tls))
+        smtp_server = await create_smtp_server(
+            host=get_host(smtp.host),
+            port=smtp.port,
+            mails_path=Path(cfg.mails_path),
+            mbox_finder=mbox_finder,
+            ssl_context=get_tls_context(smtp.tls),
+        )
         servers.append(smtp_server)
 
     if servers:
@@ -93,31 +95,41 @@ async def a_main(cfg: config.Config) -> None:
 
 
 def main() -> None:
-    parser = ArgumentParser(description="Personal Mail Server", epilog="See https://gitea.balki.me/balki/mail4one for more info")
+    parser = ArgumentParser(
+        description="Personal Mail Server",
+        epilog="See https://gitea.balki.me/balki/mail4one for more info",
+    )
     parser.add_argument(
         "-e",
         "--echo_password",
         action="store_true",
-        help="Show password in command line if -g without password is used")
+        help="Show password in command line if -g without password is used",
+    )
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("-c",
-                       "--config",
-                       metavar="CONFIG_PATH",
-                       type=Path,
-                       help="Run mail server with passed config")
-    group.add_argument("-g",
-                       "--genpwhash",
-                       nargs="?",
-                       dest="password",
-                       const="FROM_TERMINAL",
-                       metavar="PASSWORD",
-                       help="Generate password hash to add in config")
-    group.add_argument("-r",
-                       "--pwverify",
-                       dest="password_pwhash",
-                       nargs=2,
-                       metavar=("PASSWORD", "PWHASH"),
-                       help="Check if password matches password hash")
+    group.add_argument(
+        "-c",
+        "--config",
+        metavar="CONFIG_PATH",
+        type=Path,
+        help="Run mail server with passed config",
+    )
+    group.add_argument(
+        "-g",
+        "--genpwhash",
+        nargs="?",
+        dest="password",
+        const="FROM_TERMINAL",
+        metavar="PASSWORD",
+        help="Generate password hash to add in config",
+    )
+    group.add_argument(
+        "-r",
+        "--pwverify",
+        dest="password_pwhash",
+        nargs=2,
+        metavar=("PASSWORD", "PWHASH"),
+        help="Check if password matches password hash",
+    )
     args = parser.parse_args()
     if password := args.password:
         if password == "FROM_TERMINAL":
@@ -138,5 +150,5 @@ def main() -> None:
         asyncio.run(a_main(cfg), debug=cfg.debug)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

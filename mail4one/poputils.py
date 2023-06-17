@@ -11,6 +11,7 @@ class ClientError(Exception):
 class ClientQuit(ClientError):
     pass
 
+
 class ClientDisconnected(ClientError):
     pass
 
@@ -85,7 +86,7 @@ def parse_command(bline: bytes) -> Request:
     if parts:
         request.arg2, *parts = parts
     if parts:
-        request.rest, = parts
+        (request.rest, ) = parts
     return request
 
 
@@ -124,7 +125,7 @@ def set_nid(entries: list[MailEntry]):
 
 
 def get_mail(entry: MailEntry) -> bytes:
-    with open(entry.path, mode='rb') as fp:
+    with open(entry.path, mode="rb") as fp:
         return fp.read()
 
 

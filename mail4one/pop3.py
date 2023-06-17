@@ -11,9 +11,24 @@ from .config import User
 from .pwhash import parse_hash, check_pass, PWInfo
 from asyncio import StreamReader, StreamWriter
 
-from .poputils import InvalidCommand, parse_command, err, Command, \
-        ClientQuit, ClientDisconnected, ClientError, AuthError, ok, \
-        msg, end, Request, MailEntry, get_mail, get_mails_list, MailList
+from .poputils import (
+    InvalidCommand,
+    parse_command,
+    err,
+    Command,
+    ClientQuit,
+    ClientDisconnected,
+    ClientError,
+    AuthError,
+    ok,
+    msg,
+    end,
+    Request,
+    MailEntry,
+    get_mail,
+    get_mails_list,
+    MailList,
+)
 
 
 async def next_req() -> Request:
@@ -85,7 +100,8 @@ async def auth_stage() -> None:
                 await handle_user_pass_auth(req)
                 if state().username in config().loggedin_users:
                     logging.warning(
-                        f"User: {state().username} already has an active session")
+                        f"User: {state().username} already has an active session"
+                    )
                     raise AuthError("Already logged in")
                 else:
                     config().loggedin_users.add(state().username)
@@ -217,7 +233,7 @@ async def transaction_stage() -> None:
     existing_deleted_items: set[str] = get_deleted_items(deleted_items_path)
     mails_list = [
         entry
-        for entry in get_mails_list(config().mails_path / state().mbox / 'new')
+        for entry in get_mails_list(config().mails_path / state().mbox / "new")
         if entry.uid not in existing_deleted_items
     ]
 
@@ -282,14 +298,14 @@ class Config:
         self.loggedin_users: set[str] = set()
 
 
-c_config: contextvars.ContextVar = contextvars.ContextVar('config')
+c_config: contextvars.ContextVar = contextvars.ContextVar("config")
 
 
 def config() -> Config:
     return c_config.get()
 
 
-c_state: contextvars.ContextVar = contextvars.ContextVar('state')
+c_state: contextvars.ContextVar = contextvars.ContextVar("state")
 
 
 def state() -> State:
@@ -312,20 +328,23 @@ def make_pop_server_callback(mails_path: Path, users: list[User],
     return session_cb
 
 
-async def create_pop_server(host: str,
-                            port: int,
-                            mails_path: Path,
-                            users: list[User],
-                            ssl_context: ssl.SSLContext | None = None,
-                            timeout_seconds: int = 60) -> asyncio.Server:
+async def create_pop_server(
+    host: str,
+    port: int,
+    mails_path: Path,
+    users: list[User],
+    ssl_context: ssl.SSLContext | None = None,
+    timeout_seconds: int = 60,
+) -> asyncio.Server:
     logging.info(
         f"Starting POP3 server {host=}, {port=}, {mails_path=}, {len(users)=}, {ssl_context != None=}, {timeout_seconds=}"
     )
-    return await asyncio.start_server(make_pop_server_callback(
-        mails_path, users, timeout_seconds),
-                                      host=host,
-                                      port=port,
-                                      ssl=ssl_context)
+    return await asyncio.start_server(
+        make_pop_server_callback(mails_path, users, timeout_seconds),
+        host=host,
+        port=port,
+        ssl=ssl_context,
+    )
 
 
 async def a_main(*args, **kwargs) -> None:

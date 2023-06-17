@@ -12,7 +12,7 @@ SCRYPT_R = 8
 SCRYPT_P = 1
 
 # If any of above parameters change, version will be incremented
-VERSION = b'\x01'
+VERSION = b"\x01"
 SALT_LEN = 30
 KEY_LEN = 64  # This is python default
 
@@ -51,21 +51,26 @@ def parse_hash(pwhash_str: str) -> PWInfo:
 
 def check_pass(password: str, pwinfo: PWInfo) -> bool:
     # No need for constant time compare for hashes. See https://security.stackexchange.com/a/46215
-    return pwinfo.scrypt_hash == scrypt(password.encode(),
-                                        salt=pwinfo.salt,
-                                        n=SCRYPT_N,
-                                        r=SCRYPT_R,
-                                        p=SCRYPT_P,
-                                        dklen=KEY_LEN)
+    return pwinfo.scrypt_hash == scrypt(
+        password.encode(),
+        salt=pwinfo.salt,
+        n=SCRYPT_N,
+        r=SCRYPT_R,
+        p=SCRYPT_P,
+        dklen=KEY_LEN,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     if len(sys.argv) == 2:
         print(gen_pwhash(sys.argv[1]))
     elif len(sys.argv) == 3:
         ok = check_pass(sys.argv[1], parse_hash(sys.argv[2]))
         print("OK" if ok else "NOT OK")
     else:
-        print("Usage: python3 -m mail4one.pwhash <password> [password_hash]",
-              file=sys.stderr)
+        print(
+            "Usage: python3 -m mail4one.pwhash <password> [password_hash]",
+            file=sys.stderr,
+        )
