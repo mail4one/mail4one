@@ -1,0 +1,22 @@
+# mail4one.service
+
+[Unit]
+Description=Personal Mail server
+Documentation=https://gitea.balki.me/balki/mail4one
+After=network.target network-online.target
+Requires=network-online.target
+
+[Service]
+User=mail4one
+ExecStart=/usr/local/bin/mail4one --config /etc/mail4one/config.json
+PrivateTmp=true
+ProtectSystem=full
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+StateDirectory=mail4one
+LogsDirectory=mail4one
+WorkingDirectory=/var/lib/mail4one
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

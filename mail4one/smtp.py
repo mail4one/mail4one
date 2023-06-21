@@ -41,7 +41,7 @@ class MyHandler(AsyncMessage):
     async def handle_message(self, m: Message):  # type: ignore[override]
         all_mboxes: set[str] = set()
         for addr in self.rcpt_tos:
-            for mbox in self.mbox_finder(addr):
+            for mbox in self.mbox_finder(addr.lower()):
                 all_mboxes.add(mbox)
         if not all_mboxes:
             logger.warning(f"dropping message from: {self.peer}")
