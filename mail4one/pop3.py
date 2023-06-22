@@ -351,10 +351,13 @@ def make_pop_server_callback(mails_path: Path, users: list[User],
             State(reader=reader, writer=writer, ip=ip, req_id=scfg.next_id()))
         logger.info(f"Got pop server callback")
         try:
-            return await asyncio.wait_for(start_session(), timeout_seconds)
-        finally:
-            writer.close()
-            await writer.wait_closed()
+            try:
+                return await asyncio.wait_for(start_session(), timeout_seconds)
+            finally:
+                writer.close()
+                await writer.wait_closed()
+        except:
+            logger.exception("unexpected exception")
 
     return session_cb
 
