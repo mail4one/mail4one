@@ -321,8 +321,8 @@ async def start_session() -> None:
     except ClientError as c:
         write(err("Something went wrong"))
         logger.error(f"Unexpected client error: {c}")
-    except Exception as e:
-        logger.error(f"Serious client error: {e}")
+    except:
+        logger.exception("Serious client error")
         raise
     finally:
         with contextlib.suppress(KeyError):
@@ -371,7 +371,7 @@ async def create_pop_server(
     timeout_seconds: int = 60,
 ) -> asyncio.Server:
     logging.info(
-        f"Starting POP3 server {host=}, {port=}, {mails_path=}, {len(users)=}, {ssl_context != None=}, {timeout_seconds=}"
+        f"Starting POP3 server {host=}, {port=}, {mails_path=!s}, {len(users)=}, {ssl_context != None=}, {timeout_seconds=}"
     )
     return await asyncio.start_server(
         make_pop_server_callback(mails_path, users, timeout_seconds),

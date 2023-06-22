@@ -75,8 +75,8 @@ def protocol_factory_starttls(mails_path: Path,
             tls_context=context,
             enable_SMTPUTF8=True,
         )
-    except Exception as e:
-        logger.error("Something went wrong", e)
+    except:
+        logger.exception("Something went wrong")
         raise
     return smtp
 
@@ -87,8 +87,8 @@ def protocol_factory(mails_path: Path, mbox_finder: Callable[[str],
     try:
         handler = MyHandler(mails_path, mbox_finder)
         smtp = SMTP(handler=handler, enable_SMTPUTF8=True)
-    except Exception as e:
-        logger.error("Something went wrong", e)
+    except:
+        logger.exception("Something went wrong")
         raise
     return smtp
 
@@ -101,7 +101,7 @@ async def create_smtp_server_starttls(
     ssl_context: ssl.SSLContext,
 ) -> asyncio.Server:
     logging.info(
-        f"Starting SMTP STARTTLS server {host=}, {port=}, {mails_path=}, {ssl_context != None=}"
+        f"Starting SMTP STARTTLS server {host=}, {port=}, {mails_path=!s}, {ssl_context != None=}"
     )
     loop = asyncio.get_event_loop()
     return await loop.create_server(
@@ -121,7 +121,7 @@ async def create_smtp_server(
     ssl_context: ssl.SSLContext | None = None,
 ) -> asyncio.Server:
     logging.info(
-        f"Starting SMTP server {host=}, {port=}, {mails_path=}, {ssl_context != None=}"
+        f"Starting SMTP server {host=}, {port=}, {mails_path=!s}, {ssl_context != None=}"
     )
     loop = asyncio.get_event_loop()
     return await loop.create_server(

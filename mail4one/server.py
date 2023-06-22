@@ -150,7 +150,7 @@ def main() -> None:
     else:
         cfg = config.Config(args.config.read_text())
         setup_logging(config.LogCfg(cfg.logging))
-        logging.info(f"Starting mail4one {args.config=}")
+        logging.info(f"Starting mail4one {args.config=!s}")
         asyncio.run(a_main(cfg))
 
 
