@@ -1,5 +1,3 @@
-
-
 shell: 
 	MYPYPATH=`pipenv --venv`/lib/python3.11/site-packages pipenv shell
 
@@ -18,6 +16,7 @@ requirements.txt: Pipfile.lock
 build: clean requirements.txt
 	python3 -m pip install -r requirements.txt --target build
 	cp -r mail4one/ build/
+	sed -i "s/DEVELOMENT/$(shell scripts/get_version.sh)/" build/mail4one/version.py
 	python3 -m compileall build/mail4one -f
 	rm -rf build/*.dist-info
 	python3 -m zipapp \

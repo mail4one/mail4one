@@ -9,6 +9,7 @@ from getpass import getpass
 
 from .smtp import create_smtp_server_starttls, create_smtp_server
 from .pop3 import create_pop_server
+from .version import VERSION
 
 from . import config
 from . import pwhash
@@ -25,15 +26,17 @@ def setup_logging(cfg: config.LogCfg):
     if cfg.logfile == "STDOUT":
         logging.basicConfig(level=cfg.level, format=logging_format)
     else:
-        logging.basicConfig(filename=cfg.logfile, level=cfg.level, format=logging_format)
-
+        logging.basicConfig(filename=cfg.logfile,
+                            level=cfg.level,
+                            format=logging_format)
 
 
 async def a_main(cfg: config.Config) -> None:
     default_tls_context: ssl.SSLContext | None = None
 
     if tls := cfg.default_tls:
-        logging.info(f"Initializing default tls {tls.certfile=}, {tls.keyfile=}")
+        logging.info(
+            f"Initializing default tls {tls.certfile=}, {tls.keyfile=}")
         default_tls_context = create_tls_context(tls.certfile, tls.keyfile)
 
     def get_tls_context(tls: config.TLSCfg | str):
@@ -102,6 +105,7 @@ def main() -> None:
         description="Personal Mail Server",
         epilog="See https://gitea.balki.me/balki/mail4one for more info",
     )
+    parser.add_argument("-v", "--version", action="version", version=VERSION)
     parser.add_argument(
         "-e",
         "--echo_password",
@@ -150,7 +154,7 @@ def main() -> None:
     else:
         cfg = config.Config(args.config.read_text())
         setup_logging(config.LogCfg(cfg.logging))
-        logging.info(f"Starting mail4one {args.config=!s}")
+        logging.info(f"Starting mail4one {VERSION} {args.config=!s}")
         asyncio.run(a_main(cfg))
 
 
