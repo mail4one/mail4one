@@ -23,7 +23,7 @@ def create_tls_context(certfile, keyfile) -> ssl.SSLContext:
 
 def setup_logging(cfg: config.LogCfg):
     logging_format = "%(asctime)s %(name)s %(levelname)s %(message)s @ %(filename)s:%(lineno)d"
-    if cfg.logfile == "STDOUT":
+    if cfg.logfile == "CONSOLE":
         logging.basicConfig(level=cfg.level, format=logging_format)
     else:
         logging.basicConfig(filename=cfg.logfile,

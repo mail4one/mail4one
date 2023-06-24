@@ -63,7 +63,7 @@ class SmtpCfg(ServerCfg):
 
 
 class LogCfg(Jata):
-    logfile = "STDOUT"
+    logfile = "CONSOLE"
     level = "INFO"
 
 
