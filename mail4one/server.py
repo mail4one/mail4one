@@ -45,7 +45,7 @@ async def a_main(cfg: config.Config) -> None:
         elif tls == "disable":
             return None
         else:
-            tls_cfg = config.TLSCfg(pop.tls)
+            tls_cfg = config.TLSCfg(tls)
             return create_tls_context(tls_cfg.certfile, tls_cfg.keyfile)
 
     def get_host(host):
@@ -57,47 +57,52 @@ async def a_main(cfg: config.Config) -> None:
     mbox_finder = config.gen_addr_to_mboxes(cfg)
     servers: list[asyncio.Server] = []
 
-    if cfg.pop:
-        pop = config.PopCfg(cfg.pop)
-        pop_server = await create_pop_server(
-            host=get_host(pop.host),
-            port=pop.port,
-            mails_path=Path(cfg.mails_path),
-            users=cfg.users,
-            ssl_context=get_tls_context(pop.tls),
-            timeout_seconds=pop.timeout_seconds,
-        )
-        servers.append(pop_server)
+    if not cfg.servers:
+        logging.warning("Nothing to do!")
+        return
 
-    if cfg.smtp_starttls:
-        stls = config.SmtpStartTLSCfg(cfg.smtp_starttls)
-        stls_context = get_tls_context(stls.tls)
-        if not stls_context:
-            raise Exception("starttls requires ssl_context")
-        smtp_server_starttls = await create_smtp_server_starttls(
-            host=get_host(stls.host),
-            port=stls.port,
-            mails_path=Path(cfg.mails_path),
-            mbox_finder=mbox_finder,
-            ssl_context=stls_context,
-        )
-        servers.append(smtp_server_starttls)
-
-    if cfg.smtp:
-        smtp = config.SmtpCfg(cfg.smtp)
-        smtp_server = await create_smtp_server(
-            host=get_host(smtp.host),
-            port=smtp.port,
-            mails_path=Path(cfg.mails_path),
-            mbox_finder=mbox_finder,
-            ssl_context=get_tls_context(smtp.tls),
-        )
-        servers.append(smtp_server)
+    for scfg in cfg.servers:
+        if scfg.server_type == "pop":
+            pop = config.PopCfg(scfg)
+            pop_server = await create_pop_server(
+                host=get_host(pop.host),
+                port=pop.port,
+                mails_path=Path(cfg.mails_path),
+                users=cfg.users,
+                ssl_context=get_tls_context(pop.tls),
+                timeout_seconds=pop.timeout_seconds,
+            )
+            servers.append(pop_server)
+        elif scfg.server_type == "smtp_starttls":
+            stls = config.SmtpStartTLSCfg(scfg)
+            stls_context = get_tls_context(stls.tls)
+            if not stls_context:
+                raise Exception("starttls requires ssl_context")
+            smtp_server_starttls = await create_smtp_server_starttls(
+                host=get_host(stls.host),
+                port=stls.port,
+                mails_path=Path(cfg.mails_path),
+                mbox_finder=mbox_finder,
+                ssl_context=stls_context,
+            )
+            servers.append(smtp_server_starttls)
+        elif scfg.server_type == "smtp":
+            smtp = config.SmtpCfg(scfg)
+            smtp_server = await create_smtp_server(
+                host=get_host(smtp.host),
+                port=smtp.port,
+                mails_path=Path(cfg.mails_path),
+                mbox_finder=mbox_finder,
+                ssl_context=get_tls_context(smtp.tls),
+            )
+            servers.append(smtp_server)
+        else:
+            logging.error(f"Unknown server {scfg.server_type=}")
 
     if servers:
         await asyncio.gather(*[server.serve_forever() for server in servers])
     else:
-        logging.warn("Nothing to do!")
+        logging.warning("Nothing to do!")
 
 
 def main() -> None:

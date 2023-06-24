@@ -41,6 +41,7 @@ class TLSCfg(Jata):
 
 
 class ServerCfg(Jata):
+    server_type: str
     host: str = "default"
     port: int
     # disabled: bool = False
@@ -48,17 +49,20 @@ class ServerCfg(Jata):
 
 
 class PopCfg(ServerCfg):
+    server_type = "pop"
     port = 995
     timeout_seconds = 60
 
 
 class SmtpStartTLSCfg(ServerCfg):
-    smtputf8 = True
+    server_type = "smtp_starttls"
+    smtputf8 = True # Not used yet
     port = 25
 
 
 class SmtpCfg(ServerCfg):
-    smtputf8 = True
+    server_type = "smtp_starttls"
+    smtputf8 = True # Not used yet
     port = 465
 
 
@@ -77,10 +81,7 @@ class Config(Jata):
     boxes: list[Mbox]
     users: list[User]
 
-    pop: PopCfg | None = None
-    smtp_starttls: SmtpStartTLSCfg | None = None
-    smtp: SmtpCfg | None = None
-    # smtp_port_submission = 587
+    servers: list[ServerCfg]
 
 
 CheckerFn = Callable[[str], bool]
