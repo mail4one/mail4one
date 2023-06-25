@@ -14,10 +14,10 @@ requirements.txt: Pipfile.lock
 	pipenv requirements > requirements.txt
 
 build: clean requirements.txt
-	python3 -m pip install -r requirements.txt --target build
+	python3 -m pip install -r requirements.txt --no-compile --target build
 	cp -r mail4one/ build/
 	sed -i "s/DEVELOMENT/$(shell scripts/get_version.sh)/" build/mail4one/version.py
-	python3 -m compileall build/mail4one -f
+	rm -rf build/mail4one/__pycache__
 	rm -rf build/*.dist-info
 	python3 -m zipapp \
 		--output mail4one.pyz \

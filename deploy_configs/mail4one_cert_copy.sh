@@ -10,7 +10,7 @@ set -x
 if [ "$RENEWED_DOMAINS" = "mail.mydomain.com" ]
 then
 		mkdir -p /var/lib/mail4one/certs
-		chmod 500 /var/lib/mail4one/certs
+		chmod 750 /var/lib/mail4one/certs
 		chown mail4one:mail4one /var/lib/mail4one/certs
 		cp "$RENEWED_LINEAGE/fullchain.pem" /var/lib/mail4one/certs/
 		cp "$RENEWED_LINEAGE/privkey.pem" /var/lib/mail4one/certs/

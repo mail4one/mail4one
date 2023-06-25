@@ -9,14 +9,19 @@ Requires=network-online.target
 [Service]
 User=mail4one
 ExecStart=/usr/local/bin/mail4one --config /etc/mail4one/config.json
-PrivateTmp=true
-ProtectSystem=full
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
-StateDirectory=mail4one
+StateDirectory=mail4one/certs mail4one/mails
+StateDirectoryMode=0750
+UMask=
 LogsDirectory=mail4one
 WorkingDirectory=/var/lib/mail4one
+
+ProtectSystem=strict
+PrivateTmp=true
+PrivateUsers=true
 ProtectHome=yes
+NoNewPrivileges=yes
 
 [Install]
 WantedBy=multi-user.target
