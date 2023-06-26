@@ -28,3 +28,6 @@ build: clean requirements.txt
 clean:
 	rm -rf build
 	rm -rf mail4one.pyz
+
+format:
+	black mail4one/*py

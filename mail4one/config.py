@@ -56,13 +56,13 @@ class PopCfg(ServerCfg):
 
 class SmtpStartTLSCfg(ServerCfg):
     server_type = "smtp_starttls"
-    smtputf8 = True # Not used yet
+    smtputf8 = True  # Not used yet
     port = 25
 
 
 class SmtpCfg(ServerCfg):
     server_type = "smtp_starttls"
-    smtputf8 = True # Not used yet
+    smtputf8 = True  # Not used yet
     port = 465
 
 
@@ -89,7 +89,6 @@ Checker = tuple[str, CheckerFn, bool]
 
 
 def parse_checkers(cfg: Config) -> list[Checker]:
-
     def make_match_fn(m: Match):
         if m.addrs and m.addr_rexs:
             raise Exception("Both addrs and addr_rexs is set")
@@ -97,8 +96,7 @@ def parse_checkers(cfg: Config) -> list[Checker]:
             return lambda malias: malias in m.addrs
         elif m.addr_rexs:
             compiled_res = [re.compile(reg) for reg in m.addr_rexs]
-            return lambda malias: any(
-                reg.match(malias) for reg in compiled_res)
+            return lambda malias: any(reg.match(malias) for reg in compiled_res)
         else:
             raise Exception("Neither addrs nor addr_rexs is set")
 
@@ -114,13 +112,13 @@ def parse_checkers(cfg: Config) -> list[Checker]:
         return mbox_name, match_fn, rule.stop_check
 
     return [
-        make_checker(mbox.name, Rule(rule)) for mbox in cfg.boxes or []
+        make_checker(mbox.name, Rule(rule))
+        for mbox in cfg.boxes or []
         for rule in mbox.rules
     ]
 
 
 def get_mboxes(addr: str, checks: list[Checker]) -> list[str]:
-
     def inner():
         for mbox, match_fn, stop_check in checks:
             if match_fn(addr):

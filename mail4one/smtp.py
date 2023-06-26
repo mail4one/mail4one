@@ -25,15 +25,14 @@ logger = logging.getLogger("smtp")
 
 
 class MyHandler(AsyncMessage):
-
-    def __init__(self, mails_path: Path, mbox_finder: Callable[[str],
-                                                               list[str]]):
+    def __init__(self, mails_path: Path, mbox_finder: Callable[[str], list[str]]):
         super().__init__()
         self.mails_path = mails_path
         self.mbox_finder = mbox_finder
 
-    async def handle_DATA(self, server: SMTPServer, session: SMTPSession,
-                          envelope: SMTPEnvelope) -> str:
+    async def handle_DATA(
+        self, server: SMTPServer, session: SMTPSession, envelope: SMTPEnvelope
+    ) -> str:
         self.rcpt_tos = envelope.rcpt_tos
         self.peer = session.peer
         return await super().handle_DATA(server, session, envelope)
@@ -63,9 +62,9 @@ class MyHandler(AsyncMessage):
             )
 
 
-def protocol_factory_starttls(mails_path: Path,
-                              mbox_finder: Callable[[str], list[str]],
-                              context: ssl.SSLContext):
+def protocol_factory_starttls(
+    mails_path: Path, mbox_finder: Callable[[str], list[str]], context: ssl.SSLContext
+):
     logger.info("Got smtp client cb starttls")
     try:
         handler = MyHandler(mails_path, mbox_finder)
@@ -81,8 +80,7 @@ def protocol_factory_starttls(mails_path: Path,
     return smtp
 
 
-def protocol_factory(mails_path: Path, mbox_finder: Callable[[str],
-                                                             list[str]]):
+def protocol_factory(mails_path: Path, mbox_finder: Callable[[str], list[str]]):
     logger.info("Got smtp client cb")
     try:
         handler = MyHandler(mails_path, mbox_finder)
@@ -105,8 +103,7 @@ async def create_smtp_server_starttls(
     )
     loop = asyncio.get_event_loop()
     return await loop.create_server(
-        partial(protocol_factory_starttls, mails_path, mbox_finder,
-                ssl_context),
+        partial(protocol_factory_starttls, mails_path, mbox_finder, ssl_context),
         host=host,
         port=port,
         start_serving=False,

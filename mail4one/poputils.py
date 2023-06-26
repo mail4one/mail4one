@@ -86,7 +86,7 @@ def parse_command(bline: bytes) -> Request:
     if parts:
         request.arg2, *parts = parts
     if parts:
-        (request.rest, ) = parts
+        (request.rest,) = parts
     return request
 
 
@@ -130,7 +130,6 @@ def get_mail(entry: MailEntry) -> bytes:
 
 
 class MailList:
-
     def __init__(self, entries: list[MailEntry]):
         self.entries = entries
         set_nid(self.entries)

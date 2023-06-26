@@ -22,21 +22,22 @@ def create_tls_context(certfile, keyfile) -> ssl.SSLContext:
 
 
 def setup_logging(cfg: config.LogCfg):
-    logging_format = "%(asctime)s %(name)s %(levelname)s %(message)s @ %(filename)s:%(lineno)d"
+    logging_format = (
+        "%(asctime)s %(name)s %(levelname)s %(message)s @ %(filename)s:%(lineno)d"
+    )
     if cfg.logfile == "CONSOLE":
         logging.basicConfig(level=cfg.level, format=logging_format)
     else:
-        logging.basicConfig(filename=cfg.logfile,
-                            level=cfg.level,
-                            format=logging_format)
+        logging.basicConfig(
+            filename=cfg.logfile, level=cfg.level, format=logging_format
+        )
 
 
 async def a_main(cfg: config.Config) -> None:
     default_tls_context: ssl.SSLContext | None = None
 
     if tls := cfg.default_tls:
-        logging.info(
-            f"Initializing default tls {tls.certfile=}, {tls.keyfile=}")
+        logging.info(f"Initializing default tls {tls.certfile=}, {tls.keyfile=}")
         default_tls_context = create_tls_context(tls.certfile, tls.keyfile)
 
     def get_tls_context(tls: config.TLSCfg | str):

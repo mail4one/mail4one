@@ -19,17 +19,13 @@ KEY_LEN = 64  # This is python default
 
 def gen_pwhash(password: str) -> str:
     salt = os.urandom(SALT_LEN)
-    sh = scrypt(password.encode(),
-                salt=salt,
-                n=SCRYPT_N,
-                r=SCRYPT_R,
-                p=SCRYPT_P,
-                dklen=KEY_LEN)
+    sh = scrypt(
+        password.encode(), salt=salt, n=SCRYPT_N, r=SCRYPT_R, p=SCRYPT_P, dklen=KEY_LEN
+    )
     return b32encode(VERSION + salt + sh).decode()
 
 
 class PWInfo:
-
     def __init__(self, salt: bytes, sh: bytes):
         self.salt = salt
         self.scrypt_hash = sh
@@ -40,12 +36,13 @@ def parse_hash(pwhash_str: str) -> PWInfo:
 
     if not len(pwhash) == 1 + SALT_LEN + KEY_LEN:
         raise Exception(
-            f"Invalid hash size, {len(pwhash)} !=  {1 + SALT_LEN + KEY_LEN}")
+            f"Invalid hash size, {len(pwhash)} !=  {1 + SALT_LEN + KEY_LEN}"
+        )
 
     if (ver := pwhash[0:1]) != VERSION:
         raise Exception(f"Invalid hash version, {ver!r} !=  {VERSION!r}")
 
-    salt, sh = pwhash[1:SALT_LEN + 1], pwhash[-KEY_LEN:]
+    salt, sh = pwhash[1 : SALT_LEN + 1], pwhash[-KEY_LEN:]
     return PWInfo(salt, sh)
 
 

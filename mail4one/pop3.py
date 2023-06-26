@@ -44,7 +44,6 @@ class State:
 
 
 class SharedState:
-
     def __init__(self, mails_path: Path, users: dict[str, tuple[PWInfo, str]]):
         self.mails_path = mails_path
         self.users = users
@@ -56,8 +55,7 @@ class SharedState:
         return self.counter
 
 
-c_shared_state: contextvars.ContextVar = contextvars.ContextVar(
-    "pop_shared_state")
+c_shared_state: contextvars.ContextVar = contextvars.ContextVar("pop_shared_state")
 
 
 def scfg() -> SharedState:
@@ -72,7 +70,6 @@ def state() -> State:
 
 
 class PopLogger(logging.LoggerAdapter):
-
     def __init__(self):
         super().__init__(logging.getLogger("pop3"), None)
 
@@ -280,8 +277,7 @@ def get_deleted_items(deleted_items_path: Path) -> set[str]:
     return set()
 
 
-def save_deleted_items(deleted_items_path: Path,
-                       deleted_items: set[str]) -> None:
+def save_deleted_items(deleted_items_path: Path, deleted_items: set[str]) -> None:
     with deleted_items_path.open(mode="w") as f:
         f.writelines(f"{did}\n" for did in deleted_items)
 
@@ -298,8 +294,9 @@ async def transaction_stage() -> None:
     new_deleted_items: set[str] = await process_transactions(mails_list)
     logger.info(f"completed transactions. Deleted:{len(new_deleted_items)}")
     if new_deleted_items:
-        save_deleted_items(deleted_items_path,
-                           existing_deleted_items.union(new_deleted_items))
+        save_deleted_items(
+            deleted_items_path, existing_deleted_items.union(new_deleted_items)
+        )
 
     logger.info(f"Saved deleted items")
 
@@ -330,7 +327,6 @@ async def start_session() -> None:
 
 
 def parse_users(users: list[User]) -> dict[str, tuple[PWInfo, str]]:
-
     def inner():
         for user in users:
             user = User(user)
@@ -340,15 +336,13 @@ def parse_users(users: list[User]) -> dict[str, tuple[PWInfo, str]]:
     return dict(inner())
 
 
-def make_pop_server_callback(mails_path: Path, users: list[User],
-                             timeout_seconds: int):
+def make_pop_server_callback(mails_path: Path, users: list[User], timeout_seconds: int):
     scfg = SharedState(mails_path=mails_path, users=parse_users(users))
 
     async def session_cb(reader: StreamReader, writer: StreamWriter):
         c_shared_state.set(scfg)
         ip, _ = writer.get_extra_info("peername")
-        c_state.set(
-            State(reader=reader, writer=writer, ip=ip, req_id=scfg.next_id()))
+        c_state.set(State(reader=reader, writer=writer, ip=ip, req_id=scfg.next_id()))
         logger.info(f"Got pop server callback")
         try:
             try:
