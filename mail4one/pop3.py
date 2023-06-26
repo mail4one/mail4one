@@ -13,6 +13,8 @@ from .pwhash import parse_hash, check_pass, PWInfo
 from asyncio import StreamReader, StreamWriter
 import random
 
+from typing import Optional
+
 from .poputils import (
     InvalidCommand,
     parse_command,
@@ -361,7 +363,7 @@ async def create_pop_server(
     port: int,
     mails_path: Path,
     users: list[User],
-    ssl_context: ssl.SSLContext | None = None,
+    ssl_context: Optional[ssl.SSLContext] = None,
     timeout_seconds: int = 60,
 ) -> asyncio.Server:
     logging.info(

@@ -13,6 +13,7 @@ from .version import VERSION
 
 from . import config
 from . import pwhash
+from typing import Optional, Union
 
 
 def create_tls_context(certfile, keyfile) -> ssl.SSLContext:
@@ -34,13 +35,13 @@ def setup_logging(cfg: config.LogCfg):
 
 
 async def a_main(cfg: config.Config) -> None:
-    default_tls_context: ssl.SSLContext | None = None
+    default_tls_context: Optional[ssl.SSLContext] = None
 
     if tls := cfg.default_tls:
         logging.info(f"Initializing default tls {tls.certfile=}, {tls.keyfile=}")
         default_tls_context = create_tls_context(tls.certfile, tls.keyfile)
 
-    def get_tls_context(tls: config.TLSCfg | str):
+    def get_tls_context(tls: Union[config.TLSCfg, str]):
         if tls == "default":
             return default_tls_context
         elif tls == "disable":

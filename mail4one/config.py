@@ -1,7 +1,7 @@
 import json
 import re
 import logging
-from typing import Callable
+from typing import Callable, Union, Optional
 from jata import Jata, MutableDefault
 
 
@@ -45,7 +45,7 @@ class ServerCfg(Jata):
     host: str = "default"
     port: int
     # disabled: bool = False
-    tls: TLSCfg | str = "default"
+    tls: Union[TLSCfg, str] = "default"
 
 
 class PopCfg(ServerCfg):
@@ -72,9 +72,9 @@ class LogCfg(Jata):
 
 
 class Config(Jata):
-    default_tls: TLSCfg | None
+    default_tls: Optional[TLSCfg] = None
     default_host: str = "0.0.0.0"
-    logging: LogCfg | None = None
+    logging: Optional[LogCfg] = None
 
     mails_path: str
     matches: list[Match]

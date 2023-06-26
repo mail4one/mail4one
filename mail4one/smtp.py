@@ -7,7 +7,7 @@ import uuid
 import shutil
 from functools import partial
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 from . import config
 from email.message import Message
 import email.policy
@@ -115,7 +115,7 @@ async def create_smtp_server(
     port: int,
     mails_path: Path,
     mbox_finder: Callable[[str], list[str]],
-    ssl_context: ssl.SSLContext | None = None,
+    ssl_context: Optional[ssl.SSLContext] = None,
 ) -> asyncio.Server:
     logging.info(
         f"Starting SMTP server {host=}, {port=}, {mails_path=!s}, {ssl_context != None=}"
