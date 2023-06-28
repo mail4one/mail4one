@@ -4,3 +4,4 @@ __pycache__
 dummy.py
 build
 mail4one.pyz
+deploy_configs/config.json

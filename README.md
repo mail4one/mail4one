@@ -1,44 +1,70 @@
-# mail4one
+# Mail4one
 
-Mail server for single user #asyncio #python
+Personal mail server for a single user or a small family. Written in pure python with minimal dependencies.
+Designed for dynamic alias based workflow where a different alias is used for each purpose.
 
-## Features
+# Getting started
 
-* smtp server with STARTTLS
-* pop3 server with TLS
-* Both running on single thread using asyncio
-* Saves mails in simple Maildir format (i.e one file per email message)
-* After opening port, drops root privileges. So the process will not running as `nobody`
+ 1. Get a domain name
+ 1. Get a VPS (or a home server). Setup firewall rules for receive on port 25, 995, 465
+ 1. Setup [MX record](#dns-records-receiving)
+ 1. [Build](#building-from-source) / Download latest release - `mail4one.pyz`
+ 1. Generate `config.json` from [config.sample](deploy_configs/config.sample)
+ 1. Run `./mail4one.pyz -c config.json`
+ 1. [Optional] Setup systemd service and TLS certificates. See [deploy_configs](deploy_configs/) for examples
 
-## How to use
+# Sending email
 
-    echo -n "balki is awesome+<YOUR PASSWORD>" | sha256sum 
-    pipenv install
-    sudo $(pipenv --venv)/bin/python ./run.py --certfile /etc/letsencrypt/live/your.domain.com/fullchain.pem --keyfile /etc/letsencrypt/live/your.domain.com/privkey.pem /var/mails --password_hash <PASSWORD_HASH_FROM_ABOVE>
+Mail4one only takes care of receiving and serving email. For sending email, use an external service like below
 
-## Just pop server for debugging
+* https://www.smtp2go.com/pricing/
+* https://www.mailgun.com/pricing/
+* https://sendgrid.com/free/
 
-    pipenv run python -m mail4one.pop3 /path/to/mails 9995 your_password
+Most of them have generous free tier which is more than enough for personal use.
 
-## Nextups
+Sending email is tricky. Even if everything is correctly setup (DMARC, DKIM, SPF), popular email vendors like google, microsoft may mark emails sent from your IP as spam for no reason.
 
- * Support sending emails - Also support for popular services like mailgun/sendgrid 
- * Smart assistant like functionality. For e.g. 
-   * You don't need all emails of package deliver status. Just the latest one would be enough.
-   * Some type of emails can auto expire. Old newsletters are not very helpful
-   * Aggregate emails for weekend reading.
- * Small webserver
- * SPAM filtering - not that important as you can use unique addresses for each service. e.g. facebook@mydomian.com, bankac@mydomain.com, reddit@mydomain.com etc. You can easily figure out who sold your address to spammers and block it.
+# Community
 
-## Goals
- * Intended to be used for one person. So won't have features that don't make sense in this context. e.g. LDAP AUTH, Mail quota, etc,
- * Supports only python3.7. No plans to support older versions
+Original source is at https://gitea.balki.me/balki/mail4one
 
-## Known to work
- * Server: Google Cloud f1-micro with Ubuntu 18.04 - Always Free instance
- * Clients: thunderbird, evolution, k9mail
- * smtp: Received email from all. Didn't see any drops. Tested from gmail, protonmail, reddit and few others
+For issues, pull requests, discussions, please use github mirror: https://github.com/mail4one/mail4one
 
-## Contribution
+# Documentation
 
-Pull requests and issues welcome
+See files under [deploy_configs](deploy_configs/) for configuring and deploying to a standard systemd based linux system (e.g. debian, ubuntu, fedora, archlinux etc). [config.sample](deploy_configs/config.sample) has inline comments for more details. Feel free create github issue/discussions for support.
+
+## DNS Records (Receiving)
+
+If you want to receive email for `john@example.com` and your VPS IP address is `1.2.3.4`. Following record needs to be created
+
+|Type  | Name             | Target               | Notes                                                |
+|------|------------------|----------------------|------------------------------------------------------|
+| A    | mail.example.com | `1.2.3.4`              |                                                      |
+| AAAA | mail.example.com | `abcd:1234::1234::1`   | Optional, add if available                           |
+| MX   | example.com      | `mail.example.com`     |                                                      |
+| MX   | sub.example.com  | `mail.example.com`     | Optional, to receive emails like foo@sub.example.com |
+
+For sending emails `DMARC`, `DKIM` and `SPF` records need to be set. Please refer to email [sending](#sending-email) provider for details.
+
+# Building from source
+
+Make sure to have make, git, python >= 3.9, and pip installed in your system and run below
+
+    make build
+
+This should generate `mail4one.pyz` in current folder. This is a [executable python archive](https://docs.python.org/3/library/zipapp.html). Should be runnable as `./mail4one.pyz` or as `python3 mail4one.pyz`.
+
+# Roadmap (Planned features for future)
+
+* Other ways to install and update (PIP, AUR, docker etc)
+* Write dedicated documentation
+* Test with more email clients ([Thunderbird](https://www.thunderbird.net/) and [k9mail](https://k9mail.app/) are tested now)
+* IMAP support
+* Web UI for editing config
+* Support email submission from client to forward to other senders or direct delivery
+* Optional SPAM filtering
+* Optional DMARC,SPF,DKIM verification
+* Webmail Client
+* Web UI to view graphs and smart reports

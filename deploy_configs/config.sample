@@ -1,0 +1,144 @@
+# NOTE: Sample config is provided in yaml format for easy editing
+# mail4one needs a json config, Please convert the config to json before passing to app
+# This is to avoid yaml depependency in the app
+#
+# Some tools to convert to json:
+# If you have go in your system (https://go.dev/)
+# go run github.com/mikefarah/yq/v4@latest -oj -P . config.sample > config.json
+#
+# If you have pipx in your system (https://pypa.github.io/pipx/)
+# pipx run yq . config.sample > config.json
+#
+# or a browser:
+# https://onlineyamltools.com/convert-yaml-to-json
+#
+default_tls: # Will be used by both pop and smtp servers
+  # If using certbot(https://certbot.eff.org/),
+  # the following files will be here /etc/letsencrypt/live/<domain name>
+  # Use mail4one_cert_copy.sh to automaticallly copy on renewal
+  certfile: /var/lib/mail4one/certs/fullchain.pem
+  keyfile: /var/lib/mail4one/certs/privkey.pem
+
+# default_host: '0.0.0.0'
+
+logging:
+  # Setup logrotate(https://github.com/logrotate/logrotate) if needed
+  logfile: /var/log/mail4one/mail4one.log
+
+mails_path: /var/lib/mail4one/mails
+
+matches:
+  # only <to> address is matched. (sent by smtp RCPT command)
+  # address is converted to lowercase before matching
+  - name: example.com
+    addr_rexs:
+      - .*@example.com
+
+  - name: promotion-spammers
+    addrs:
+      - twitter@example.com
+      - random-app-not-used-anymore@example.com
+      - flyer-walmart@example.com
+
+  - name: john
+    addrs:
+      - john.doe@example.com # Tip: Dont use this. Always use a different alias, this way there is no address for spammers
+      - secret.name@example.com
+      - john.facebook@example.com
+
+  - name: jane
+    addrs:
+      - jane.doe@example.com
+      - jane.instagram@example.com
+
+  - name: jane-all
+    addr_rexs:
+      - jane.*@example.com
+
+  - name: shared
+    addrs:
+      - kidschool@example.com
+      - mortgage@example.com
+      - water@example.com
+      - electricity@example.com
+      - airbnb@example.com
+
+boxes:
+  # Mails saved in maildir format under <mails_path>/<name>/new
+  - name: default_null_mbox # Means, the mails are dropped
+    rules:
+      - match_name: example.com
+        negate: true # Anything mail that does not match '.*@example.com'
+        stop_check: true # No further rules will be checked, mail is dropped
+
+  # Mailbox to store non-interesting emails but occasionally have a useful mail
+  # Create a second account in your email client and disable notification
+  - name: promotion-box
+    rules:
+      - match_name: promotion-spammers
+        stop_check: true
+
+  - name: johnsmbox
+    rules:
+      - match_name: john
+      - match_name: shared
+      ## To receive all emails excluding jane's personal emails
+      # - match_name: jane
+      #   negate: true
+
+  - name: janesmbox
+    rules:
+      - match_name: jane
+      - match_name: shared
+      - match_name: jane-all
+
+  - name: all
+    rules:
+      # matches all emails except those are not for 'example.com', which are dropped before
+      - match_name: default_match_all 
+
+users: # Used only by the pop server, smtp is for receiving mails only. No auth is used
+  - username: johnmobile
+    # Generated using below command. Will produce different hash each time (salt is random)
+    # ./mail4one.pyz -g johnsecretpassword
+    password_hash: AEH6JG3IZR3ASA2ORJHQ62YTR6PHFRP6PAXQ6RI2VZFXAT5M6VAATE373PGCUHBJTLIDOQV6UJKICP2JTKDE3QXP7ROJ227QYFQDAXPP4LY4TLPTEHUZG7D7X6VKWZ4BVCASYCD3SSNQ555AZPIFMDAV
+    mbox: johnsmbox
+
+  # **NOTE** Use different username for each email client.
+  # Otherwise emails may appear in only one client
+  - username: johnlaptop
+    password_hash: AEH6JG3IZR3ASA2ORJHQ62YTR6PHFRP6PAXQ6RI2VZFXAT5M6VAATE373PGCUHBJTLIDOQV6UJKICP2JTKDE3QXP7ROJ227QYFQDAXPP4LY4TLPTEHUZG7D7X6VKWZ4BVCASYCD3SSNQ555AZPIFMDAV
+    mbox: johnsmbox
+
+  # Second account to not clutter main mailbox. Disable notification for this account
+  - username: john-mobile-promotion
+    password_hash: AGBD47ZYBA7BMUQY25YDTYQWVPJFDBTLIICKFP2IL2GI4M7AO2LIVIZXTY6N25KBRLOEC7TLXGAFW7SSQEBKCG7U3FJNKW6RZWZBS3ABSP2U53BBIOCXZNWPXJGWAQ6WFXIF7T4YQJZD5QLF2OO4JZ45
+    mbox: promotion-box
+
+  - username: janemobile
+    password_hash: AGQNPATXU7PP7LDD6DZ4HFLUUHRJDHFQKKKRLVLGOIIEHC7TPOZF7NTXGDAIGDNHF62RAH4N44DB46O3VC4TBOLE5XHY6S77YPLTWCNAHGONEOZYO6YWJ3NHLKOHFJLF6BOHNMCI3RCPWXWXQPHSFDQR
+    mbox: janesmbox
+
+  - username: family_desktop # Catch all for backup
+    password_hash: AGBD47ZYBA7BMUQY25YDTYQWVPJFDBTLIICKFP2IL2GI4M7AO2LIVIZXTY6N25KBRLOEC7TLXGAFW7SSQEBKCG7U3FJNKW6RZWZBS3ABSP2U53BBIOCXZNWPXJGWAQ6WFXIF7T4YQJZD5QLF2OO4JZ45
+    mbox: all
+
+servers:
+  - server_type: pop
+    ## default values
+    # port: 995
+    # host: '0.0.0.0'
+    # tls: default # Uses default_tls config
+  - server_type: smtp
+    ## default values
+    # port: 465
+    # host: '0.0.0.0'
+    # tls: default # Uses default_tls config
+    # tls: disable # disable tls and receive emails in plain text only
+  - server_type: smtp_starttls
+    ## default values
+    # port: 25
+    # host: '0.0.0.0'
+    # tls: default # Uses default_tls config
+
+# vim: ft=yaml

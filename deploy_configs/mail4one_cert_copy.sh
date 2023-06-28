@@ -1,6 +1,8 @@
 #!/bin/sh
 
 #  certbot deploy hook to copy certificates to mail4one when renewed.
+#  Initial setup, Install certbot(https://certbot.eff.org/) and run `certbot certonly` as root
+#
 #  This file is supposed to be copied to /etc/letsencrypt/renewal-hooks/deploy/
 #  Change the mail domain to the one on MX record
 
