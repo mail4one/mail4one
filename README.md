@@ -11,7 +11,7 @@ Designed for dynamic alias based workflow where a different alias is used for ea
  1. [Build](#building-from-source) / Download latest release - `mail4one.pyz`
  1. Generate `config.json` from [config.sample](deploy_configs/config.sample)
  1. Run `./mail4one.pyz -c config.json`
- 1. [Optional] Setup systemd service and TLS certificates. See [deploy_configs](deploy_configs/) for examples
+ 1. Setup systemd service and TLS certificates. See [deploy_configs](deploy_configs/) for examples
 
 # Sending email
 

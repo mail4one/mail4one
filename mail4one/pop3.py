@@ -116,8 +116,8 @@ async def expect_cmd(*commands: Command) -> Request:
     return req
 
 
-def write(data) -> None:
-    logger.debug(f"Server: {data}")
+def write(data: bytes) -> None:
+    logger.debug(f"Server: {data!r}")
     state().writer.write(data)
 
 
