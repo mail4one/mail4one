@@ -16,11 +16,11 @@ clean:
 	rm -rf mail4one.pyz
 
 docker-tests:
-	docker run --pull=always -v `pwd`:/app -w /app --rm -it python:3.11-alpine sh runtests.sh
-	docker run --pull=always -v `pwd`:/app -w /app --rm -it python:3.10-alpine sh runtests.sh
-	docker run --pull=always -v `pwd`:/app -w /app --rm -it python:3.11 sh runtests.sh
-	docker run --pull=always -v `pwd`:/app -w /app --rm -it python:3.10 sh runtests.sh
-	docker run --pull=always -v `pwd`:/app -w /app --rm -it python:3.9 sh runtests.sh
+	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.11-alpine sh scripts/runtests.sh
+	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.10-alpine sh scripts/runtests.sh
+	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.11        sh scripts/runtests.sh
+	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.10        sh scripts/runtests.sh
+	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.9         sh scripts/runtests.sh
 
 # ============================================================================
 

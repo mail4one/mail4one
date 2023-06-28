@@ -9,7 +9,6 @@ then
 		case "$tag_val" in 
 				*DIRTY)
 						echo "git=$commit-changes"
-						exit
 						;;
 				v*) # Only consider tags starting with v
 						echo "$tag_val"
