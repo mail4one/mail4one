@@ -1,17 +1,17 @@
 # NOTE: Sample config is provided in yaml format for easy editing
 # mail4one needs a json config, Please convert the config to json before passing to app
-# This is to avoid yaml depependency in the app
+# This is to avoid yaml dependency in the app
 #
 # Some tools to convert to json:
-# If you have go in your system (https://go.dev/)
+# If you have `go` in your system (https://go.dev/)
 # go run github.com/mikefarah/yq/v4@latest -oj -P . config.sample > config.json
 #
-# If you have pipx in your system (https://pypa.github.io/pipx/)
+# If you have `pipx` in your system (https://pypa.github.io/pipx/)
 # pipx run yq . config.sample > config.json
 #
 # or a browser:
 # https://onlineyamltools.com/convert-yaml-to-json
-#
+
 default_tls: # Will be used by both pop and smtp servers
   # If using certbot(https://certbot.eff.org/),
   # the following files will be here /etc/letsencrypt/live/<domain name>
