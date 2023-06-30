@@ -25,6 +25,8 @@ logger = logging.getLogger("smtp")
 
 
 class MyHandler(AsyncMessage):
+    peer_addr: Optional[str]
+
     def __init__(self, mails_path: Path, mbox_finder: Callable[[str], list[str]]):
         super().__init__()
         self.mails_path = mails_path
@@ -34,7 +36,11 @@ class MyHandler(AsyncMessage):
         self, server: SMTPServer, session: SMTPSession, envelope: SMTPEnvelope
     ) -> str:
         self.rcpt_tos = envelope.rcpt_tos
-        self.peer = session.peer
+        match session.peer:
+            case addr, port:
+                self.peer_addr = addr
+            case _:
+                self.peer_addr = session.peer
         return await super().handle_DATA(server, session, envelope)
 
     async def handle_message(self, m: Message):  # type: ignore[override]
@@ -43,7 +49,7 @@ class MyHandler(AsyncMessage):
             for mbox in self.mbox_finder(addr.lower()):
                 all_mboxes.add(mbox)
         if not all_mboxes:
-            logger.warning(f"dropping message from: {self.peer}")
+            logger.warning(f"dropping message from: {self.peer_addr}")
             return
         for mbox in all_mboxes:
             for sub in ("new", "tmp", "cur"):
@@ -58,7 +64,7 @@ class MyHandler(AsyncMessage):
             for mbox in all_mboxes:
                 shutil.copy(temp_email_path, self.mails_path / mbox / "new")
             logger.info(
-                f"Saved mail at {filename} addrs: {','.join(self.rcpt_tos)}, mboxes: {','.join(all_mboxes)} peer: {self.peer}"
+                f"Saved mail at {filename} addrs: {','.join(self.rcpt_tos)}, mboxes: {','.join(all_mboxes)} peer: {self.peer_addr}"
             )
 
 
