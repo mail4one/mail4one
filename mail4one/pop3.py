@@ -13,7 +13,7 @@ from .pwhash import parse_hash, check_pass, PWInfo
 from asyncio import StreamReader, StreamWriter
 import random
 
-from typing import Optional
+from typing import Optional, List, Tuple, Dict
 
 from .poputils import (
     InvalidCommand,
@@ -46,7 +46,7 @@ class State:
 
 
 class SharedState:
-    def __init__(self, mails_path: Path, users: dict[str, tuple[PWInfo, str]]):
+    def __init__(self, mails_path: Path, users: dict[str, Tuple[PWInfo, str]]):
         self.mails_path = mails_path
         self.users = users
         self.loggedin_users: set[str] = set()
@@ -237,7 +237,7 @@ def trans_command_noop(_, __) -> None:
     write(ok("Hmm"))
 
 
-async def process_transactions(mails_list: list[MailEntry]) -> set[str]:
+async def process_transactions(mails_list: List[MailEntry]) -> set[str]:
     mails = MailList(mails_list)
 
     def reset(_, __):
@@ -328,7 +328,7 @@ async def start_session() -> None:
             scfg().loggedin_users.remove(state().username)
 
 
-def parse_users(users: list[User]) -> dict[str, tuple[PWInfo, str]]:
+def parse_users(users: List[User]) -> Dict[str, Tuple[PWInfo, str]]:
     def inner():
         for user in users:
             user = User(user)
@@ -338,7 +338,7 @@ def parse_users(users: list[User]) -> dict[str, tuple[PWInfo, str]]:
     return dict(inner())
 
 
-def make_pop_server_callback(mails_path: Path, users: list[User], timeout_seconds: int):
+def make_pop_server_callback(mails_path: Path, users: List[User], timeout_seconds: int):
     scfg = SharedState(mails_path=mails_path, users=parse_users(users))
 
     async def session_cb(reader: StreamReader, writer: StreamWriter):
@@ -362,7 +362,7 @@ async def create_pop_server(
     host: str,
     port: int,
     mails_path: Path,
-    users: list[User],
+    users: List[User],
     ssl_context: Optional[ssl.SSLContext] = None,
     timeout_seconds: int = 60,
 ) -> asyncio.Server:

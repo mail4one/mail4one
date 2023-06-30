@@ -1,14 +1,14 @@
 import json
 import re
 import logging
-from typing import Callable, Union, Optional
+from typing import Callable, Union, Optional, List, Tuple
 from jata import Jata, MutableDefault
 
 
 class Match(Jata):
     name: str
-    addrs: list[str] = MutableDefault(lambda: [])  # type: ignore
-    addr_rexs: list[str] = MutableDefault(lambda: [])  # type: ignore
+    addrs: List[str] = MutableDefault(lambda: [])  # type: ignore
+    addr_rexs: List[str] = MutableDefault(lambda: [])  # type: ignore
 
 
 DEFAULT_MATCH_ALL = "default_match_all"
@@ -23,7 +23,7 @@ class Rule(Jata):
 
 class Mbox(Jata):
     name: str
-    rules: list[Rule]
+    rules: List[Rule]
 
 
 DEFAULT_NULL_MBOX = "default_null_mbox"
@@ -77,18 +77,18 @@ class Config(Jata):
     logging: Optional[LogCfg] = None
 
     mails_path: str
-    matches: list[Match]
-    boxes: list[Mbox]
-    users: list[User]
+    matches: List[Match]
+    boxes: List[Mbox]
+    users: List[User]
 
-    servers: list[ServerCfg]
+    servers: List[ServerCfg]
 
 
 CheckerFn = Callable[[str], bool]
-Checker = tuple[str, CheckerFn, bool]
+Checker = Tuple[str, CheckerFn, bool]
 
 
-def parse_checkers(cfg: Config) -> list[Checker]:
+def parse_checkers(cfg: Config) -> List[Checker]:
     def make_match_fn(m: Match):
         if m.addrs and m.addr_rexs:
             raise Exception("Both addrs and addr_rexs is set")
@@ -118,7 +118,7 @@ def parse_checkers(cfg: Config) -> list[Checker]:
     ]
 
 
-def get_mboxes(addr: str, checks: list[Checker]) -> list[str]:
+def get_mboxes(addr: str, checks: List[Checker]) -> List[str]:
     def inner():
         for mbox, match_fn, stop_check in checks:
             if match_fn(addr):
@@ -130,7 +130,7 @@ def get_mboxes(addr: str, checks: list[Checker]) -> list[str]:
     return list(inner())
 
 
-def gen_addr_to_mboxes(cfg: Config) -> Callable[[str], list[str]]:
+def gen_addr_to_mboxes(cfg: Config) -> Callable[[str], List[str]]:
     checks = parse_checkers(cfg)
     logging.info(f"Parsed checkers from config, {len(checks)=}")
     return lambda addr: get_mboxes(addr, checks)

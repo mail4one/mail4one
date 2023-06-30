@@ -7,7 +7,7 @@ import uuid
 import shutil
 from functools import partial
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 from . import config
 from email.message import Message
 import email.policy
@@ -25,7 +25,7 @@ logger = logging.getLogger("smtp")
 
 
 class MyHandler(AsyncMessage):
-    def __init__(self, mails_path: Path, mbox_finder: Callable[[str], list[str]]):
+    def __init__(self, mails_path: Path, mbox_finder: Callable[[str], List[str]]):
         super().__init__()
         self.mails_path = mails_path
         self.mbox_finder = mbox_finder
@@ -63,7 +63,7 @@ class MyHandler(AsyncMessage):
 
 
 def protocol_factory_starttls(
-    mails_path: Path, mbox_finder: Callable[[str], list[str]], context: ssl.SSLContext
+    mails_path: Path, mbox_finder: Callable[[str], List[str]], context: ssl.SSLContext
 ):
     logger.info("Got smtp client cb starttls")
     try:
@@ -80,7 +80,7 @@ def protocol_factory_starttls(
     return smtp
 
 
-def protocol_factory(mails_path: Path, mbox_finder: Callable[[str], list[str]]):
+def protocol_factory(mails_path: Path, mbox_finder: Callable[[str], List[str]]):
     logger.info("Got smtp client cb")
     try:
         handler = MyHandler(mails_path, mbox_finder)
@@ -95,9 +95,9 @@ async def create_smtp_server_starttls(
     host: str,
     port: int,
     mails_path: Path,
-    mbox_finder: Callable[[str], list[str]],
+    mbox_finder: Callable[[str], List[str]],
     ssl_context: ssl.SSLContext,
-) -> asyncio.Server:
+    ):
     logging.info(
         f"Starting SMTP STARTTLS server {host=}, {port=}, {mails_path=!s}, {ssl_context != None=}"
     )
@@ -114,9 +114,9 @@ async def create_smtp_server(
     host: str,
     port: int,
     mails_path: Path,
-    mbox_finder: Callable[[str], list[str]],
+    mbox_finder: Callable[[str], List[str]],
     ssl_context: Optional[ssl.SSLContext] = None,
-) -> asyncio.Server:
+    ):
     logging.info(
         f"Starting SMTP server {host=}, {port=}, {mails_path=!s}, {ssl_context != None=}"
     )

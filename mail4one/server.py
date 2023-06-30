@@ -57,7 +57,7 @@ async def a_main(cfg: config.Config) -> None:
             return host
 
     mbox_finder = config.gen_addr_to_mboxes(cfg)
-    servers: list[asyncio.Server] = []
+    servers: List[asyncio.Server] = []
 
     if not cfg.servers:
         logging.warning("Nothing to do!")

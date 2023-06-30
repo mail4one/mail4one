@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
+from typing import List
 
 
 class ClientError(Exception):
@@ -112,13 +113,13 @@ def files_in_path(path):
     return []
 
 
-def get_mails_list(dirpath: Path) -> list[MailEntry]:
+def get_mails_list(dirpath: Path) -> List[MailEntry]:
     files = files_in_path(dirpath)
     entries = [MailEntry(filename, path) for filename, path in files]
     return entries
 
 
-def set_nid(entries: list[MailEntry]):
+def set_nid(entries: List[MailEntry]):
     entries.sort(reverse=True, key=lambda e: (e.c_time, e.uid))
     for i, entry in enumerate(entries, start=1):
         entry.nid = i
@@ -130,7 +131,7 @@ def get_mail(entry: MailEntry) -> bytes:
 
 
 class MailList:
-    def __init__(self, entries: list[MailEntry]):
+    def __init__(self, entries: List[MailEntry]):
         self.entries = entries
         set_nid(self.entries)
         self.mails_map = {str(e.nid): e for e in entries}
