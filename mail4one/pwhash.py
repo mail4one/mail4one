@@ -16,6 +16,8 @@ VERSION = b"\x01"
 SALT_LEN = 30
 KEY_LEN = 64  # This is python default
 
+# len(VERSION) + SALT_LEN + KEY_LEN should be multiple of 5 to avoid base32 padding
+
 
 def gen_pwhash(password: str) -> str:
     salt = os.urandom(SALT_LEN)

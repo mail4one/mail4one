@@ -10,6 +10,7 @@ from getpass import getpass
 from .smtp import create_smtp_server_starttls, create_smtp_server
 from .pop3 import create_pop_server
 from .version import VERSION
+from .web_config import create_web_config_server
 
 from . import config
 from . import pwhash
@@ -98,6 +99,14 @@ async def a_main(cfg: config.Config) -> None:
                 ssl_context=get_tls_context(smtp.tls),
             )
             servers.append(smtp_server)
+        elif scfg.server_type == "web_config":
+            web = config.ServerCfg(scfg)
+            web_server = await create_web_config_server(
+                host=get_host(web.host),
+                port=web.port,
+                ssl_context=get_tls_context(web.tls),
+            )
+            servers.append(web_server)
         else:
             logging.error(f"Unknown server {scfg.server_type=}")
 
