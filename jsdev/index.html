@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Mail4one Web config</title>
+        <link rel="icon" href="data:;base64,iVBORw0KGgo=">
         <script type="application/json" id="m41config">
             {
               "matches": [
@@ -63,43 +64,41 @@
             }
         </script>
         <script type="application/javascript">
+            var matches_table
+            var match_row_template
             function main() {
-                console.log("hello world !!!")
-                var config = JSON.parse(document.getElementById('m41config').text);
                 matches_table = document.getElementById("web-cfg-matches")
-                console.log(matches_table)
+                match_row_template = document.getElementById("web-cfg-matches-row")
+                const config = JSON.parse(document.getElementById('m41config').text);
+                matches_table = document.getElementById("web-cfg-matches")
                 for (match of config["matches"]) {
-                    vals = []
-                    matchType = ""
-                    if ("addr_rexs" in match) {
-                        vals = match["addr_rexs"]
-                        matchType = "addr_rexs"
+                    let vals = []
+                    let matchType = ""
+                    const { 
+                        "name": match_name,
+                        "addrs" : addrs,
+                        "addr_rexs" : addr_rexs,
+                    } = match
 
-                    }else if ("addrs" in match) {
-                        vals = match["addrs"]
+                    if (addrs != undefined) {
+                        vals = addrs
                         matchType = "addrs"
+                    } else {
+                        vals = addr_rexs
+                        matchType = "addr_rexs"
                     }
-                    row = matches_table.insertRow(-1)
-                    name_cell = row.insertCell(-1)
-                    name_cell.innerText = match["name"]
-                    type_cell =  row.insertCell(-1)
-                    type_cell.innerText = matchType
-                    value_cell = row.insertCell(-1)
-                    value_cell.contentEditable = true
-                    for (val of vals) {
-                        const node = document.createElement("p");
-                        const textnode = document.createTextNode(val);
-                        node.appendChild(textnode);
-                        value_cell.appendChild(node);
-                    }
-                    vt = value_cell.innerText
-                    console.log(vt.split("\n"))
+
+                    addMatchRow()
+                    const rows = matches_table.tBodies[0].rows
+                    const lrow = rows.item(rows.length -1 )
+                    const [ nameCell, typeCell, valCell ] = lrow.cells
+                    nameCell.innerText = match_name
+                    typeCell.firstElementChild.value = matchType
+                    valCell.firstElementChild.value = vals.join("\n")
                 }
             }
             function addMatchRow() {
-                matches_table = document.getElementById("web-cfg-matches")
-                row_tmpl = document.getElementById("web-cfg-matches-row")
-                row_copy = row_tmpl.content.cloneNode(true)
+                row_copy = match_row_template.content.cloneNode(true)
                 tb = matches_table.tBodies[0]
                 tb.appendChild(row_copy)
             }
@@ -108,9 +107,16 @@
     <body onload="main()">
         <template id="web-cfg-matches-row">
             <tr>
-                <td>Name</td>
-                <td>Type</td>
-                <td>Values</td>
+                <td contentEditable="true" >Name</td>
+                <td>
+                    <select>
+                        <option value="addrs">List of addresses</option>
+                        <option value="addr_rexs">List of regexes for addresses</option>
+                    </select>
+                </td>
+                <td>
+                    <textarea></textarea>
+                </td>
             </tr>
         </template>
         <h1>Mail4one Web config</h1>
