@@ -64,7 +64,44 @@
         </script>
         <script type="application/javascript">
             function main() {
-                document.write("hello world")
+                console.log("hello world !!!")
+                var config = JSON.parse(document.getElementById('m41config').text);
+                matches_table = document.getElementById("web-cfg-matches")
+                console.log(matches_table)
+                for (match of config["matches"]) {
+                    vals = []
+                    matchType = ""
+                    if ("addr_rexs" in match) {
+                        vals = match["addr_rexs"]
+                        matchType = "addr_rexs"
+
+                    }else if ("addrs" in match) {
+                        vals = match["addrs"]
+                        matchType = "addrs"
+                    }
+                    row = matches_table.insertRow(-1)
+                    name_cell = row.insertCell(-1)
+                    name_cell.innerText = match["name"]
+                    type_cell =  row.insertCell(-1)
+                    type_cell.innerText = matchType
+                    value_cell = row.insertCell(-1)
+                    value_cell.contentEditable = true
+                    for (val of vals) {
+                        const node = document.createElement("p");
+                        const textnode = document.createTextNode(val);
+                        node.appendChild(textnode);
+                        value_cell.appendChild(node);
+                    }
+                    vt = value_cell.innerText
+                    console.log(vt.split("\n"))
+                }
+            }
+            function addMatchRow() {
+                matches_table = document.getElementById("web-cfg-matches")
+                row_tmpl = document.getElementById("web-cfg-matches-row")
+                row_copy = row_tmpl.content.cloneNode(true)
+                tb = matches_table.tBodies[0]
+                tb.appendChild(row_copy)
             }
         </script>
     </head>
@@ -78,11 +115,16 @@
         </template>
         <h1>Mail4one Web config</h1>
         <table id="web-cfg-matches">
+            <thead>
             <tr>
                 <th>Name</th>
                 <th>Type</th>
                 <th>Values</th>
             </tr>
+            </thead>
+            <tbody>
+            </tbody>
         </table>
+        <button onClick="addMatchRow()">Add Match</button>
     </body>
 </html>

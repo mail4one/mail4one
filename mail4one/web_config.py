@@ -45,17 +45,12 @@ class WebonfigHandler(RequestHandler):
         userpassb64 = auth_header[len("Basic ") :]
         try:
             userpass = b64decode(userpassb64)
+            username, password = userpass.split(b":")
         except:
             logging.exception("bad request")
             return False, Response.no_body_response(http.HTTPStatus.BAD_REQUEST)
 
-        try:
-            user, passwd = userpass.split(b":")
-        except:
-            logging.exception("bad request")
-            return False, Response.no_body_response(http.HTTPStatus.BAD_REQUEST)
-
-        if user == self.username and check_pass(passwd.decode(), self.pwinfo):
+        if username == self.username and check_pass(password.decode(), self.pwinfo):
             return True, None
 
         return False, resp_unauthorized()
@@ -67,7 +62,7 @@ class WebonfigHandler(RequestHandler):
             if not ok:
                 if resp:
                     return resp
-                else:
+                else: # To silence mypy
                     raise Exception("Something went wrong!")
         return Response.create_ok_response(get_template())
 
