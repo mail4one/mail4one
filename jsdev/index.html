@@ -72,12 +72,18 @@
             let matches_table
             let match_row_template
             let config
+            let boxes_ul
+            let box_template
+            let rule_template
 
             function initGlobals() {
 
                 matches_table = document.getElementById("web-cfg-matches")
                 match_row_template = document.getElementById("web-cfg-matches-row")
                 config = JSON.parse(document.getElementById('m41config').text)
+                boxes_ul = document.getElementById("web-cfg-boxes")
+                box_template = document.getElementById("web-cfg-boxes-li")
+                rule_template = document.getElementById("web-cfg-boxes-rule-li")
             }
 
             function populate_match_table(matches_config) {
@@ -130,12 +136,59 @@
                 matches_table.tBodies[0].appendChild(row_clone)
             }
 
+            function populate_boxes_list(boxes_config) {
+                for (const {name:box_name, rules} of boxes_config) {
+                    addBox()
+                    const box = boxes_ul.lastElementChild
+                    console.log(box.children)
+                    const [, header, rule_list ] = box.children
+                    console.log(header)
+                    header.innerText = box_name
+                    for (const {match_name, negate = false, stop_check = false} of rules ) {
+                        addRule(rule_list)
+                        const rule = rule_list.lastElementChild
+                        const [, 
+                            {firstElementChild: match_select}, 
+                            {firstElementChild: negateCheck}, 
+                            {firstElementChild: stopCheck} 
+                        ] = rule.children
+                        negateCheck.checked = negate
+                        stopCheck.checked = stop_check
+                    }
+                }
+            }
+
+            function addBox() {
+                let box_clone = box_template.content.cloneNode(true)
+                boxes_ul.appendChild(box_clone)
+            }
+
+            function addRule(rules_list) {
+                let rule_clone = rule_template.content.cloneNode(true)
+                rules_list.appendChild(rule_clone)
+            }
+
+            function moveUp(button) {
+                const li = button.parentElement.parentElement
+                if (li.previousElementSibling != null) {
+                    li.parentNode.insertBefore(li, li.previousElementSibling)
+                }
+            }
+
+            function moveDown(button) {
+                const li = button.parentElement.parentElement
+                if (li.nextElementSibling != null) {
+                    li.parentNode.insertBefore(li.nextElementSibling, li)
+                }
+            }
+
             function main() {
 
                 initGlobals()
                 populate_match_table(config["matches"])
                 save()
                 document.getElementById("before").innerText = JSON.stringify(config["matches"], null, 2)
+                populate_boxes_list(config["boxes"])
             }
 
             function save() {
@@ -160,6 +213,39 @@
                 <td contentEditable></td>
             </tr>
         </template>
+        <template id="web-cfg-boxes-rule-li">
+            <li>
+                <div>
+                    <button onClick="this.parentElement.parentElement.remove()">✗</button>
+                    <button onClick="moveUp(this)">UP</button>
+                    <button onClick="moveDown(this)">DOWN</button>
+                </div>
+                <label>
+                    Match Name
+                    <select></select>
+                </label>
+                <label>
+                    Negate
+                    <input type=checkbox>
+                </label>
+                <label>
+                    Stop check
+                    <input type=checkbox>
+                </label>
+            </li>
+        </template>
+        <template id="web-cfg-boxes-li">
+            <li>
+                <div>
+                    <button onClick="this.parentElement.parentElement.remove()">✗</button>
+                    <button onClick="moveUp(this)">UP</button>
+                    <button onClick="moveDown(this)">DOWN</button>
+                </div>
+                <h4 style="display: inline;"></h4>
+                <ul style="list-style-type:none">
+                </ul>
+            </li>
+        </template>
         <h1>Mail4one Web config</h1>
         <table border id="web-cfg-matches">
             <thead>
@@ -177,6 +263,9 @@
             <button onClick="addMatchRow()">Add Match</button>
             <button onClick="save()">Save</button>
         </div>
+        <h3>Boxes</h3>
+        <ul id="web-cfg-boxes" style="list-style-type:none">
+        </ul>
         <hr>
         <h3>Before</h3>
         <pre id="before"></pre>
