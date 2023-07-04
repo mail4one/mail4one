@@ -64,44 +64,80 @@
             }
         </script>
         <script type="application/javascript">
-            var matches_table
-            var match_row_template
-            function main() {
-                matches_table = document.getElementById("web-cfg-matches")
-                match_row_template = document.getElementById("web-cfg-matches-row")
-                const config = JSON.parse(document.getElementById('m41config').text);
-                matches_table = document.getElementById("web-cfg-matches")
-                for (match of config["matches"]) {
-                    let vals = []
-                    let matchType = ""
+            "use strict"
+            // Globals
+            let matches_table
+            let match_row_template
+            let config
+            function populate_match_table(matches_config) {
+                for (let match_config of matches_config) {
                     const { 
                         "name": match_name,
                         "addrs" : addrs,
                         "addr_rexs" : addr_rexs,
-                    } = match
+                    } = match_config
 
-                    if (addrs != undefined) {
-                        vals = addrs
-                        matchType = "addrs"
-                    } else {
-                        vals = addr_rexs
-                        matchType = "addr_rexs"
-                    }
+                    const [match_type, match_values] = (() => {
+                        if (addrs != undefined) {
+                            return ["addrs", addrs]
+                        } else {
+                            return ["addr_rexs", addr_rexs]
+                        }
+                    })();
+
 
                     addMatchRow()
                     const rows = matches_table.tBodies[0].rows
-                    const lrow = rows.item(rows.length -1 )
-                    const [ nameCell, typeCell, valCell ] = lrow.cells
-                    nameCell.innerText = match_name
-                    typeCell.firstElementChild.value = matchType
-                    valCell.firstElementChild.value = vals.join("\n")
+                    const last_row = rows.item(rows.length -1 )
+                    const [ name_cell, type_cell, value_cell ] = last_row.cells
+
+                    name_cell.innerText = match_name
+                    type_cell.firstElementChild.value = match_type
+                    value_cell.firstElementChild.value = match_values.join("\n")
+
                 }
             }
-            function addMatchRow() {
-                row_copy = match_row_template.content.cloneNode(true)
-                tb = matches_table.tBodies[0]
-                tb.appendChild(row_copy)
+
+            function extract_match_table() {
+                let matches = []
+                for (let row of matches_table.tBodies[0].rows) {
+                    const [ name_cell, type_cell, value_cell ] = row.cells
+                    let m = {"name" : name_cell.innerText}
+                    switch (type_cell.firstElementChild.value) {
+                        case "addrs": {
+                            m["addrs"] = value_cell.firstElementChild.value.split("\n")
+                            break;
+                        }
+                        case "addr_rexs": {
+                            m["addr_rexs"] = value_cell.firstElementChild.value.split("\n")
+                            break;
+                        }
+                    }
+                    matches.push(m)
+                }
+                return matches
             }
+
+            function main() {
+                matches_table = document.getElementById("web-cfg-matches")
+                match_row_template = document.getElementById("web-cfg-matches-row")
+                config = JSON.parse(document.getElementById('m41config').text);
+                populate_match_table(config["matches"])
+                save()
+                document.getElementById("before").value = JSON.stringify(config["matches"])
+            }
+
+            function save() {
+                const matches = extract_match_table() 
+                document.getElementById("after").value = JSON.stringify(matches)
+
+            }
+
+            function addMatchRow() {
+                let row_clone = match_row_template.content.cloneNode(true)
+                matches_table.tBodies[0].appendChild(row_clone)
+            }
+
         </script>
     </head>
     <body onload="main()">
@@ -122,15 +158,24 @@
         <h1>Mail4one Web config</h1>
         <table id="web-cfg-matches">
             <thead>
-            <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Values</th>
-            </tr>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Values</th>
+                </tr>
             </thead>
             <tbody>
             </tbody>
         </table>
         <button onClick="addMatchRow()">Add Match</button>
+        <button onClick="save()">Save</button>
+        <div>
+            <label for="cfg_before">Before</label>
+            <textarea id="before" name="cfg_before" style="width=100%"></textarea>
+        </div>
+        <div>
+            <label for="cfg_after">After</label>
+            <textarea id="after" name="cfg_after"></textarea>
+        </div>
     </body>
 </html>
