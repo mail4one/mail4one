@@ -1,8 +1,10 @@
 <!doctype html>
 <html>
     <head>
-        <title>Mail4one Web config</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+        <title>Mail4one Web config</title>
         <script type="application/json" id="m41config">
             {
               "matches": [
@@ -65,77 +67,81 @@
         </script>
         <script type="application/javascript">
             "use strict"
+
             // Globals
             let matches_table
             let match_row_template
             let config
+
+            function initGlobals() {
+
+                matches_table = document.getElementById("web-cfg-matches")
+                match_row_template = document.getElementById("web-cfg-matches-row")
+                config = JSON.parse(document.getElementById('m41config').text)
+            }
+
             function populate_match_table(matches_config) {
-                for (let match_config of matches_config) {
-                    const { 
-                        "name": match_name,
-                        "addrs" : addrs,
-                        "addr_rexs" : addr_rexs,
-                    } = match_config
+
+                for (const { name: match_name, addrs, addr_rexs } of matches_config) {
 
                     const [match_type, match_values] = (() => {
+
                         if (addrs != undefined) {
                             return ["addrs", addrs]
                         } else {
                             return ["addr_rexs", addr_rexs]
                         }
-                    })();
+                    })()
 
 
                     addMatchRow()
-                    const rows = matches_table.tBodies[0].rows
-                    const last_row = rows.item(rows.length -1 )
-                    const [ name_cell, type_cell, value_cell ] = last_row.cells
+                    const last_row = matches_table.tBodies[0].lastElementChild
+                    const [ ,name_cell, {firstElementChild: type_select}, value_cell ] = last_row.cells
 
                     name_cell.innerText = match_name
-                    type_cell.firstElementChild.value = match_type
-                    value_cell.firstElementChild.value = match_values.join("\n")
-
+                    type_select.value = match_type
+                    value_cell.innerText = match_values.join("\n")
                 }
             }
 
             function extract_match_table() {
+
                 let matches = []
                 for (let row of matches_table.tBodies[0].rows) {
-                    const [ name_cell, type_cell, value_cell ] = row.cells
+
+                    const [ ,name_cell, {firstElementChild: type_select}, value_cell ] = row.cells
                     let m = {"name" : name_cell.innerText}
-                    switch (type_cell.firstElementChild.value) {
-                        case "addrs": {
-                            m["addrs"] = value_cell.firstElementChild.value.split("\n")
-                            break;
-                        }
-                        case "addr_rexs": {
-                            m["addr_rexs"] = value_cell.firstElementChild.value.split("\n")
-                            break;
-                        }
+                    switch (type_select.value) {
+                        case "addrs":
+                            m["addrs"] = value_cell.innerText.split("\n")
+                            break
+                        case "addr_rexs":
+                            m["addr_rexs"] = value_cell.innerText.split("\n")
+                            break
                     }
                     matches.push(m)
                 }
                 return matches
             }
 
+            function addMatchRow() {
+
+                let row_clone = match_row_template.content.cloneNode(true)
+                matches_table.tBodies[0].appendChild(row_clone)
+            }
+
             function main() {
-                matches_table = document.getElementById("web-cfg-matches")
-                match_row_template = document.getElementById("web-cfg-matches-row")
-                config = JSON.parse(document.getElementById('m41config').text);
+
+                initGlobals()
                 populate_match_table(config["matches"])
                 save()
-                document.getElementById("before").value = JSON.stringify(config["matches"])
+                document.getElementById("before").innerText = JSON.stringify(config["matches"], null, 2)
             }
 
             function save() {
+
                 const matches = extract_match_table() 
-                document.getElementById("after").value = JSON.stringify(matches)
-
-            }
-
-            function addMatchRow() {
-                let row_clone = match_row_template.content.cloneNode(true)
-                matches_table.tBodies[0].appendChild(row_clone)
+                document.getElementById("after").innerText = JSON.stringify(matches, null, 2)
             }
 
         </script>
@@ -143,22 +149,22 @@
     <body onload="main()">
         <template id="web-cfg-matches-row">
             <tr>
-                <td contentEditable="true" >Name</td>
+                <td><button onClick="this.parentElement.parentElement.remove()">✗</button></td>
+                <td contentEditable></td>
                 <td>
                     <select>
                         <option value="addrs">List of addresses</option>
                         <option value="addr_rexs">List of regexes for addresses</option>
                     </select>
                 </td>
-                <td>
-                    <textarea></textarea>
-                </td>
+                <td contentEditable></td>
             </tr>
         </template>
         <h1>Mail4one Web config</h1>
-        <table id="web-cfg-matches">
+        <table border id="web-cfg-matches">
             <thead>
                 <tr>
+                    <th></th>
                     <th>Name</th>
                     <th>Type</th>
                     <th>Values</th>
@@ -167,15 +173,16 @@
             <tbody>
             </tbody>
         </table>
-        <button onClick="addMatchRow()">Add Match</button>
-        <button onClick="save()">Save</button>
         <div>
-            <label for="cfg_before">Before</label>
-            <textarea id="before" name="cfg_before" style="width=100%"></textarea>
+            <button onClick="addMatchRow()">Add Match</button>
+            <button onClick="save()">Save</button>
         </div>
-        <div>
-            <label for="cfg_after">After</label>
-            <textarea id="after" name="cfg_after"></textarea>
-        </div>
+        <hr>
+        <h3>Before</h3>
+        <pre id="before"></pre>
+        <hr>
+        <h3>After</h3>
+        <pre id="after"></pre>
+        <hr>
     </body>
 </html>
