@@ -65,6 +65,48 @@
               ]
             }
         </script>
+        <style>
+            .m41-box {
+                display: grid;
+                grid-template-columns: 1fr 2fr;
+            }
+            #web-cfg-boxes {
+                display: grid;
+                grid-template-columns: 1fr ;
+                width: 1200px;
+                //justify-content: space-around;
+                // justify-content: flex-start;
+                // background-color: blue;
+            }
+            .m41-box-info {
+                display: grid;
+                grid-template-columns: 3fr 1fr 5fr;
+                align-items: stretch;
+                // justify-content: space-around;
+            }
+            .button-group {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                align-items: stretch;
+                // display: inline-flex;
+            }
+
+            .m41-box-rule:only-child div.button-group button{
+                display: none;
+            }
+
+            .m41-box:only-child div div.button-group button{
+                display: none;
+            }
+
+            .m41-box-rule {
+                display: grid;
+                grid-template-columns: 1fr 3fr 1fr 1fr;
+                align-items: center;
+                justify-items: center;
+            }
+            
+        </style>
         <script type="application/javascript">
             "use strict"
 
@@ -140,9 +182,7 @@
                 for (const {name:box_name, rules} of boxes_config) {
                     addBox()
                     const box = boxes_ul.lastElementChild
-                    console.log(box.children)
-                    const [, header, rule_list ] = box.children
-                    console.log(header)
+                    const [{children: [,, header]}, rule_list ] = box.children
                     header.innerText = box_name
                     for (const {match_name, negate = false, stop_check = false} of rules ) {
                         addRule(rule_list)
@@ -169,14 +209,14 @@
             }
 
             function moveUp(button) {
-                const li = button.parentElement.parentElement
+                const li = button.parentElement.parentElement.parentElement
                 if (li.previousElementSibling != null) {
                     li.parentNode.insertBefore(li, li.previousElementSibling)
                 }
             }
 
             function moveDown(button) {
-                const li = button.parentElement.parentElement
+                const li = button.parentElement.parentElement.parentElement
                 if (li.nextElementSibling != null) {
                     li.parentNode.insertBefore(li.nextElementSibling, li)
                 }
@@ -214,11 +254,11 @@
             </tr>
         </template>
         <template id="web-cfg-boxes-rule-li">
-            <li>
-                <div>
+            <div class="m41-box-rule">
+                <div class="button-group">
                     <button onClick="this.parentElement.parentElement.remove()">✗</button>
-                    <button onClick="moveUp(this)">UP</button>
-                    <button onClick="moveDown(this)">DOWN</button>
+                    <button onClick="moveUp(this)">↑</button>
+                    <button onClick="moveDown(this)">↓</button>
                 </div>
                 <label>
                     Match Name
@@ -232,19 +272,22 @@
                     Stop check
                     <input type=checkbox>
                 </label>
-            </li>
+            </div>
         </template>
         <template id="web-cfg-boxes-li">
-            <li>
-                <div>
-                    <button onClick="this.parentElement.parentElement.remove()">✗</button>
-                    <button onClick="moveUp(this)">UP</button>
-                    <button onClick="moveDown(this)">DOWN</button>
+            <div class="m41-box">
+                <div class="m41-box-info">
+                    <div class="button-group">
+                        <button onClick="this.parentElement.parentElement.parentElement.remove()">✗</button>
+                        <button onClick="moveUp(this)">↑</button>
+                        <button onClick="moveDown(this)">↓</button>
+                    </div>
+                    <button onClick="addRule(this.parentElement.nextElementSibling)">+</button>
+                    <span></span>
                 </div>
-                <h4 style="display: inline;"></h4>
-                <ul style="list-style-type:none">
-                </ul>
-            </li>
+                <div class="m41-box-rules">
+                </div>
+            </div>
         </template>
         <h1>Mail4one Web config</h1>
         <table border id="web-cfg-matches">
@@ -263,9 +306,9 @@
             <button onClick="addMatchRow()">Add Match</button>
             <button onClick="save()">Save</button>
         </div>
-        <h3>Boxes</h3>
-        <ul id="web-cfg-boxes" style="list-style-type:none">
-        </ul>
+        <h3>Boxes <button onClick="addBox()">+</button></h3>
+        <div id="web-cfg-boxes">
+        </div>
         <hr>
         <h3>Before</h3>
         <pre id="before"></pre>
