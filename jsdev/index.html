@@ -66,32 +66,42 @@
             }
         </script>
         <style>
+
+td {
+    padding: 5px;
+}
+
             table {
-                border: 1px solid;
+                border: 2px solid;
             }
+
             thead {
                 background-color: orange;
             }
+
+            h1.page-title {
+                background-color: orange;
+            }
+
+            h3 {
+                text-align: center;
+            }
+
             .outer {
                 display: flex;
                 justify-content: center;
                 background: grey;
             }
-            .multiline {
-                text-align: left;
-                padding: 5px;
-                padding-left: 15px;
-            }
+
             .inner {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                border: 1px solid;
-                background: white;
+                border: 2px solid;
+                background-color: lightyellow;
                 padding: 10px;
-                justify-content: center;
+                justify-content: space-around;
                 margin: 10px;
-                // flex: 1 0 0;
                 width: 1200px;
             }
             .m41-box {
@@ -100,6 +110,13 @@
                 margin: 10px;
                 // background-color: lightblue;
             }
+
+            .multiline {
+                text-align: left;
+                padding: 5px;
+                padding-left: 15px;
+            }
+
 
             #web-cfg-matches {
                 width: 90%;
@@ -113,6 +130,7 @@
             #web-cfg-matches tbody tr:nth-of-type(even) {
                 background: lightgrey;
             }
+
             #web-cfg-boxes {
                 text-align: center;
                 width: 90%;
@@ -121,11 +139,6 @@
                 //justify-content: space-around;
                 // justify-content: flex-start;
                 // background-color: blue;
-            }
-
-            #web-cfg-boxes tbody tr td {
-                margin: 10px;
-                padding: 10px;
             }
 
             #web-cfg-boxes tbody:nth-of-type(odd) {
@@ -165,46 +178,19 @@
             }
 
             #web-cfg-boxes tbody:only-of-type tr td.box div.dummy {
-                display: block;
+                display: flex;
             }
 
-            td th {
-                padding: 5px;
+            td.box {
+                display: flex;
+                justify-content: center;
             }
 
-            .m41-box-info {
-                display: grid;
-                grid-template-columns: 4fr 2fr 5fr;
-                // align-items: stretch;
-                // justify-content: space-around;
-                // background-color: grey;
-            }
             .button-group {
                 display: flex;
                 justify-content: center;
-                // grid-template-columns: 1fr 1fr 1fr;
-                // align-items: stretch;
-                // display: inline-flex;
             }
 
-            .m41-box-rule:only-child div.button-group button{
-                // display: none;
-                visibility: hidden;
-            }
-
-            .m41-box:only-child div div.button-group button{
-                // display: none;
-                visibility: hidden;
-            }
-
-            .m41-box-rule {
-                display: flex;
-                // grid-template-columns: 1fr 3fr 1fr 1fr;
-                align-items: center;
-                justify-items: center;
-                // background-color: lightblue;
-            }
-            
         </style>
         <script type="application/javascript">
             "use strict"
@@ -294,7 +280,7 @@
                     ] = box.children
 
                     box_text.value = box_name
-                    
+
                     const [first_rule, ...rest] = rules
 
                     const {match_name, negate = false, stop = false} = first_rule
@@ -377,7 +363,7 @@
                         <option value="addr_rexs">List of regexes for addresses</option>
                     </select>
                 </td>
-                <td contentEditable class="multiline" ></td>
+                <td contentEditable class="multiline"></td>
             </tr>
         </template>
         <template id="web-cfg-box">
@@ -391,15 +377,15 @@
                         </div>
                         <div class="button-group real">
                             <button onClick="this.parentElement.parentElement.parentElement.parentElement.remove()">✗</button>
-                            <button onClick="moveUp(this)" class="real up">↑</button>
+                            <button onClick="moveBoxUp(this)" class="real up">↑</button>
                             <button disabled class="dummy up">↑</button>
-                            <button onClick="moveDown(this)" class="real down">↓</button>
+                            <button onClick="moveBoxDown(this)" class="real down">↓</button>
                             <button disabled class="dummy down">↓</button>
                         </div>
-                    </td>
-                    <td>
-                        <input type="text" contentEditable>
                         <button onClick="addRule(this.parentElement.parentElement)">+</button>
+                    </td>
+                    <td contentEditable>
+                        <input type="text" contentEditable>
                     </td>
                     <td class="rule">
                         <div class="button-group dummy">
@@ -409,9 +395,9 @@
                         </div>
                         <div class="button-group real">
                             <button onClick="this.parentElement.parentElement.parentElement.remove()">✗</button>
-                            <button onClick="moveUp(this)">↑</button>
+                            <button onClick="moveRuleUp(this)" class="real up">↑</button>
                             <button disabled class="dummy up">↑</button>
-                            <button onClick="moveDown(this)">↓</button>
+                            <button onClick="moveRuleDown(this)" class="real down">↓</button>
                             <button disabled class="dummy down">↓</button>
                         </div>
                     </td>
@@ -429,47 +415,58 @@
         </template>
         <div class="outer">
             <div class="inner">
-        <h1>Mail4one Web config</h1>
-        <table id="web-cfg-matches">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Match</th>
-                    <th>Type</th>
-                    <th>Values</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-        <div>
-            <button onClick="addMatchRow()">Add Match</button>
-            <button onClick="save()">Save</button>
-        </div>
+                <h1 class="page-title">Mail4one Web config</h1>
+                <div id="top-menu">
+                    <button onClick="save()">Previous</button>
+                    <button onClick="save()">Matches</button>
+                    <button onClick="save()">Boxes</button>
+                    <button onClick="save()">Users</button>
+                    <button onClick="save()">JSON</button>
+                    <button onClick="save()">Next</button>
+                </div>
+                <div id="match-page">
+                    <h3> Matches </h3>
+                    <table id="web-cfg-matches">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <button onClick="addMatchRow()">+</button>
+                                </th>
+                                <th>Match</th>
+                                <th>Type</th>
+                                <th>Values</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
 
-        <h3>Boxes <button onClick="addBox()">+</button></h3>
+                <div id=box-page">
+                    <h3>Boxes</h3>
 
-        <table id="web-cfg-boxes">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Mailbox</th>
-                    <th></th>
-                    <th>Match</th>
-                    <th>Invert</th>
-                    <th>Stop</th>
-                </tr>
-            </thead>
-        </table>
+                    <table id="web-cfg-boxes">
+                        <thead>
+                            <tr>
+                                <th><button onClick="addBox()">+</button></th>
+                                <th>Mailbox</th>
+                                <th></th>
+                                <th>Match</th>
+                                <th>Invert</th>
+                                <th>Stop</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
 
-        <hr>
+                <hr>
 
-        <h3>Before</h3>
-        <pre id="before"></pre>
-        <hr>
-        <h3>After</h3>
-        <pre id="after"></pre>
-        <hr>
+                <h3>Before</h3>
+                <pre id="before"></pre>
+                <hr>
+                <h3>After</h3>
+                <pre id="after"></pre>
+                <hr>
             </div>
         </div>
     </body>
