@@ -66,17 +66,33 @@
             }
         </script>
         <style>
+            table {
+                border: 1px solid;
+            }
+            thead {
+                background-color: orange;
+            }
             .outer {
                 display: flex;
                 justify-content: center;
                 background: grey;
             }
+            .multiline {
+                text-align: left;
+                padding: 5px;
+                padding-left: 15px;
+            }
             .inner {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
                 border: 1px solid;
                 background: white;
-                padding: 5px;
+                padding: 10px;
+                justify-content: center;
+                margin: 10px;
                 // flex: 1 0 0;
-                // max-width: 700px;
+                width: 1200px;
             }
             .m41-box {
                 display: grid;
@@ -84,21 +100,76 @@
                 margin: 10px;
                 // background-color: lightblue;
             }
+
+            #web-cfg-matches {
+                width: 90%;
+                text-align: center;
+            }
+
+            #web-cfg-matches tbody tr:nth-of-type(odd) {
+                background: lightblue;
+            }
+
+            #web-cfg-matches tbody tr:nth-of-type(even) {
+                background: lightgrey;
+            }
             #web-cfg-boxes {
+                text-align: center;
+                width: 90%;
                 // display: grid;
                 // grid-template-columns: 1fr ;
-                width: 100%;
                 //justify-content: space-around;
                 // justify-content: flex-start;
                 // background-color: blue;
             }
 
-            .m41-box:nth-of-type(odd) {
+            #web-cfg-boxes tbody tr td {
+                margin: 10px;
+                padding: 10px;
+            }
+
+            #web-cfg-boxes tbody:nth-of-type(odd) {
                 background: lightblue;
             }
 
-            .m41-box:nth-of-type(even) {
+            #web-cfg-boxes tbody:nth-of-type(even) {
                 background: lightgrey;
+            }
+
+            #web-cfg-boxes tbody tr td div.dummy{
+                display: none;
+            }
+
+            #web-cfg-boxes tbody tr td div button.dummy {
+                display: none;
+            }
+
+            #web-cfg-boxes tbody:first-of-type tr td.box div button.up.dummy {
+                display: block;
+            }
+
+            #web-cfg-boxes tbody:first-of-type tr td.box div button.up.real {
+                display: none;
+            }
+
+            #web-cfg-boxes tbody:last-of-type tr td.box div button.down.dummy {
+                display: block;
+            }
+
+            #web-cfg-boxes tbody:last-of-type tr td.box div button.down.real {
+                display: none;
+            }
+
+            #web-cfg-boxes tbody:only-of-type tr td.box div.real {
+                display: none;
+            }
+
+            #web-cfg-boxes tbody:only-of-type tr td.box div.dummy {
+                display: block;
+            }
+
+            td th {
+                padding: 5px;
             }
 
             .m41-box-info {
@@ -139,21 +210,21 @@
             "use strict"
 
             // Globals
+            let server_config
             let matches_table
             let match_row_template
-            let config
-            let boxes_ul
+            let boxes_table
             let box_template
-            let rule_template
+            // let rule_template
 
             function initGlobals() {
 
+                server_config = JSON.parse(document.getElementById('m41config').text)
                 matches_table = document.getElementById("web-cfg-matches")
                 match_row_template = document.getElementById("web-cfg-matches-row")
-                config = JSON.parse(document.getElementById('m41config').text)
-                boxes_ul = document.getElementById("web-cfg-boxes")
-                box_template = document.getElementById("web-cfg-boxes-li")
-                rule_template = document.getElementById("web-cfg-boxes-rule-li")
+                boxes_table = document.getElementById("web-cfg-boxes")
+                box_template = document.getElementById("web-cfg-box")
+                // rule_template = document.getElementById("web-cfg-boxes-rule-li")
             }
 
             function populate_match_table(matches_config) {
@@ -207,34 +278,62 @@
             }
 
             function populate_boxes_list(boxes_config) {
+
                 for (const {name:box_name, rules} of boxes_config) {
+
                     addBox()
-                    const box = boxes_ul.lastElementChild
-                    const [{children: [,, header]}, rule_list ] = box.children
-                    header.innerText = box_name
-                    for (const {match_name, negate = false, stop_check = false} of rules ) {
-                        addRule(rule_list)
-                        const rule = rule_list.lastElementChild
+                    const tbody = boxes_table.lastElementChild
+                    const box = tbody.firstElementChild
+                    // console.log(box)
+                    const [, 
+                        {children: [box_text, ]},
+                        ,
+                        {firstElementChild: match_select},
+                        {firstElementChild: negate_check},
+                        {firstElementChild: stop_check},
+                    ] = box.children
+
+                    box_text.value = box_name
+                    
+                    const [first_rule, ...rest] = rules
+
+                    const {match_name, negate = false, stop = false} = first_rule
+
+                    match_select.value = match_name
+                    negate_check.checked = negate
+                    stop_check.checked = stop
+
+                    for (const {match_name, negate = false, stop_check = false} of rest ) {
+
+                        addRule(box)
+                        const rule = tbody.lastElementChild
                         const [, 
                             {firstElementChild: match_select}, 
                             {firstElementChild: negateCheck}, 
                             {firstElementChild: stopCheck} 
                         ] = rule.children
-                        negateCheck.checked = negate
-                        stopCheck.checked = stop_check
+                        match_select.value = match_name
+                        negate_check.checked = negate
+                        stop_check.checked = stop
                     }
                 }
             }
 
-            function addBox() {
-                let box_clone = box_template.content.cloneNode(true)
-                boxes_ul.appendChild(box_clone)
+            function addRule(box) {
+                box.parentElement.appendChild(box.cloneNode(true))
+                box.children[0].rowSpan++;
+                box.children[1].rowSpan++;
+                const newrule = box.parentElement.lastElementChild
+                newrule.removeClass("fist-tr")
+                newrule.firstElementChild.remove()
+                newrule.firstElementChild.remove()
             }
 
-            function addRule(rules_list) {
-                let rule_clone = rule_template.content.cloneNode(true)
-                rules_list.appendChild(rule_clone)
+            function addBox() {
+                let box_clone = box_template.content.cloneNode(true)
+                boxes_table.appendChild(box_clone)
             }
+
 
             function moveUp(button) {
                 const li = button.parentElement.parentElement.parentElement
@@ -253,10 +352,10 @@
             function main() {
 
                 initGlobals()
-                populate_match_table(config["matches"])
+                populate_match_table(server_config["matches"])
                 save()
-                document.getElementById("before").innerText = JSON.stringify(config["matches"], null, 2)
-                populate_boxes_list(config["boxes"])
+                document.getElementById("before").innerText = JSON.stringify(server_config["matches"], null, 2)
+                populate_boxes_list(server_config["boxes"])
             }
 
             function save() {
@@ -278,53 +377,64 @@
                         <option value="addr_rexs">List of regexes for addresses</option>
                     </select>
                 </td>
-                <td contentEditable></td>
+                <td contentEditable class="multiline" ></td>
             </tr>
         </template>
-        <template id="web-cfg-boxes-rule-li">
-            <div class="m41-box-rule">
-                <div class="button-group">
-                    <button onClick="this.parentElement.parentElement.remove()">✗</button>
-                    <button onClick="moveUp(this)">↑</button>
-                    <button onClick="moveDown(this)">↓</button>
-                </div>
-                <label>
-                    Match Name
-                    <select></select>
-                </label>
-                <label>
-                    Negate
-                    <input type=checkbox>
-                </label>
-                <label>
-                    Stop check
-                    <input type=checkbox>
-                </label>
-            </div>
-        </template>
-        <template id="web-cfg-boxes-li">
-            <div class="m41-box">
-                <div class="m41-box-info">
-                    <div class="button-group">
-                        <button onClick="this.parentElement.parentElement.parentElement.remove()">✗</button>
-                        <button onClick="moveUp(this)">↑</button>
-                        <button onClick="moveDown(this)">↓</button>
-                    </div>
-                    <button onClick="addRule(this.parentElement.nextElementSibling)">+</button>
-                    <span></span>
-                </div>
-                <div class="m41-box-rules">
-                </div>
-            </div>
+        <template id="web-cfg-box">
+            <tbody>
+                <tr>
+                    <td class="box">
+                        <div class="button-group dummy">
+                            <button disabled>✗</button>
+                            <button disabled>↑</button>
+                            <button disabled>↓</button>
+                        </div>
+                        <div class="button-group real">
+                            <button onClick="this.parentElement.parentElement.parentElement.parentElement.remove()">✗</button>
+                            <button onClick="moveUp(this)" class="real up">↑</button>
+                            <button disabled class="dummy up">↑</button>
+                            <button onClick="moveDown(this)" class="real down">↓</button>
+                            <button disabled class="dummy down">↓</button>
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" contentEditable>
+                        <button onClick="addRule(this.parentElement.parentElement)">+</button>
+                    </td>
+                    <td class="rule">
+                        <div class="button-group dummy">
+                            <button disabled>✗</button>
+                            <button disabled>↑</button>
+                            <button disabled>↓</button>
+                        </div>
+                        <div class="button-group real">
+                            <button onClick="this.parentElement.parentElement.parentElement.remove()">✗</button>
+                            <button onClick="moveUp(this)">↑</button>
+                            <button disabled class="dummy up">↑</button>
+                            <button onClick="moveDown(this)">↓</button>
+                            <button disabled class="dummy down">↓</button>
+                        </div>
+                    </td>
+                    <td>
+                        <select></select>
+                    </td>
+                    <td>
+                        <input type=checkbox>
+                    </td>
+                    <td>
+                        <input type=checkbox>
+                    </td>
+                </tr>
+            </tbody>
         </template>
         <div class="outer">
             <div class="inner">
         <h1>Mail4one Web config</h1>
-        <table border id="web-cfg-matches">
+        <table id="web-cfg-matches">
             <thead>
                 <tr>
                     <th></th>
-                    <th>Name</th>
+                    <th>Match</th>
                     <th>Type</th>
                     <th>Values</th>
                 </tr>
@@ -336,10 +446,24 @@
             <button onClick="addMatchRow()">Add Match</button>
             <button onClick="save()">Save</button>
         </div>
+
         <h3>Boxes <button onClick="addBox()">+</button></h3>
-        <div id="web-cfg-boxes">
-        </div>
+
+        <table id="web-cfg-boxes">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Mailbox</th>
+                    <th></th>
+                    <th>Match</th>
+                    <th>Invert</th>
+                    <th>Stop</th>
+                </tr>
+            </thead>
+        </table>
+
         <hr>
+
         <h3>Before</h3>
         <pre id="before"></pre>
         <hr>
