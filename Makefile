@@ -18,6 +18,7 @@ clean:
 docker-tests:
 	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.11-alpine sh scripts/runtests.sh
 	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.10-alpine sh scripts/runtests.sh
+	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.12        sh scripts/runtests.sh
 	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.11        sh scripts/runtests.sh
 	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.10        sh scripts/runtests.sh
 	docker run --pull=always -v `pwd`:/app -w /app --rm python:3.9         sh scripts/runtests.sh
@@ -37,6 +38,11 @@ setup:
 
 cleanup:
 	pipenv --rm
+
+update:
+	rm requirements.txt Pipfile.lock
+	pipenv update
+	pipenv requirements > requirements.txt
 
 shell:
 	MYPYPATH=`pipenv --venv`/lib/python3.11/site-packages pipenv shell

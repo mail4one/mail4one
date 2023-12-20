@@ -22,6 +22,7 @@
                 "sha256:f9243b7dfe00aaf567da8728d891752426b51392174a34d2cf5c18053b63dcbc"
             ],
             "index": "pypi",
+            "markers": "python_version ~= '3.7'",
             "version": "==1.4.4.post2"
         },
         "atpublic": {
@@ -46,6 +47,7 @@
                 "sha256:ff4cd7ca75c9a8306b69ef6e878c296a5602f3279c6f9a82b6105b8eba764760"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.8'",
             "version": "==1.2"
         }
     },
