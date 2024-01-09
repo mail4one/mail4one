@@ -1,6 +1,6 @@
 # Mail4one
 
-Personal mail server for a single user or a small family. Written in pure python with minimal dependencies.
+Personal mail server for a single user or a small family. Written in pure python with [minimal dependencies](Pipfile).
 Designed for dynamic alias based workflow where a different alias is used for each purpose.
 
 # Getting started
@@ -23,7 +23,7 @@ Mail4one only takes care of receiving and serving email. For sending email, use 
 
 Most of them have generous free tier which is more than enough for personal use.
 
-Sending email is tricky. Even if everything is correctly setup (DMARC, DKIM, SPF), popular email vendors like google, microsoft may mark emails sent from your IP as spam for no reason.
+Sending email is tricky. Even if everything is correctly setup (DMARC, DKIM, SPF), popular email vendors like google, microsoft may mark emails sent from your IP as spam for no reason. Hence using a dedicated service is the only reliable way to send emails.
 
 # Community
 
@@ -62,7 +62,7 @@ This should generate `mail4one.pyz` in current folder. This is a [executable pyt
 * Write dedicated documentation
 * Test with more email clients ([Thunderbird](https://www.thunderbird.net/) and [k9mail](https://k9mail.app/) are tested now)
 * IMAP support
-* Web UI for editing config
+* Web UI for editing config ([WIP](https://github.com/mail4one/mail4one/tree/webform))
 * Support email submission from client to forward to other senders or direct delivery
 * Optional SPAM filtering
 * Optional DMARC,SPF,DKIM verification
