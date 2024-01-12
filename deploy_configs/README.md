@@ -107,7 +107,7 @@ cd test_dir
 python3 -m http.server 25
 ```
 In local machine or a browser
-You should see file listing a, b, c. Repeat for port 465, 995 to make sure firewall rules and dns is working 
+You should see file listing a, b, c. Repeat for port 465, 995 to make sure firewall rules and dns is working
 ```sh
 curl http://mail.example.com:25
 ```
