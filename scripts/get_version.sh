@@ -8,7 +8,7 @@ then
 		tag_val=$(git describe --dirty=DIRTY --exact-match)
 		case "$tag_val" in 
 				*DIRTY)
-						echo "git=$commit-changes"
+						echo "git-$commit-changes"
 						;;
 				v*) # Only consider tags starting with v
 						echo "$tag_val"

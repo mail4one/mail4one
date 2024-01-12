@@ -3,6 +3,8 @@ build: clean
 	python3 -m pip install -r requirements.txt --no-compile --target build
 	cp -r mail4one/ build/
 	sed -i "s/DEVELOMENT/$(shell scripts/get_version.sh)/" build/mail4one/version.py
+	find build -name "*.pyi" -o -name "py.typed" | xargs -I typefile rm typefile
+	rm -rf build/bin 
 	rm -rf build/mail4one/__pycache__
 	rm -rf build/*.dist-info
 	python3 -m zipapp \
