@@ -9,13 +9,11 @@ from mail4one.config import User
 from pathlib import Path
 
 TEST_HASH = "".join(
-    c
-    for c in """
+    """
 AFTY5EVN7AX47ZL7UMH3BETYWFBTAV3XHR73CEFAJBPN2NIHPWD
 ZHV2UQSMSPHSQQ2A2BFQBNC77VL7F2UKATQNJZGYLCSU6C43UQD
 AQXWXSWNGAEPGIMG2F3QDKBXL3MRHY6K2BPID64ZR6LABLPVSF
-"""
-    if not c.isspace()
+""".split()
 )
 
 TEST_USER = "foobar"
@@ -42,7 +40,8 @@ Hello bro\r
 IlzVOJqu9Zp7twFAtzcV\r
 yQVk36B0mGU2gtWxXLr\r
 PeF0RtbI0mAuVPLQDHCi\r
-\r\n"""
+\r
+"""
 
 
 def setUpModule() -> None:

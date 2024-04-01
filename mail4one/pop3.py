@@ -386,13 +386,14 @@ def debug_main():
     logging.basicConfig(level=logging.DEBUG)
 
     import sys
+    from .pwhash import gen_pwhash
 
-    _, mails_path, port, password = sys.argv
+    _, mails_path, mbox = sys.argv
 
     mails_path = Path(mails_path)
-    port = int(port)
+    users = [User(username="dummy", password_hash=gen_pwhash("dummy"), mbox=mbox)]
 
-    asyncio.run(a_main(mails_path, port, password_hash=password_hash))
+    asyncio.run(a_main("127.0.0.1", 1101, mails_path, users=users))
 
 
 if __name__ == "__main__":
