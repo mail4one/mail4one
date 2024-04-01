@@ -18,20 +18,20 @@
     "default": {
         "aiosmtpd": {
             "hashes": [
-                "sha256:f821fe424b703b2ea391dc2df11d89d2afd728af27393e13cf1a3530f19fdc5e",
-                "sha256:f9243b7dfe00aaf567da8728d891752426b51392174a34d2cf5c18053b63dcbc"
+                "sha256:78d7b14f859ad0e6de252b47f9cf1ca6f1c82a8b0f10a9e39bec7e915a6aa5fe",
+                "sha256:a196922f1903e54c4d37c53415b7613056d39e2b1e8249f324b9ee7a439be0f1"
             ],
             "index": "pypi",
-            "markers": "python_version ~= '3.7'",
-            "version": "==1.4.4.post2"
+            "markers": "python_version >= '3.8'",
+            "version": "==1.4.5"
         },
         "atpublic": {
             "hashes": [
-                "sha256:0f40433219e124edf115c6c363808ca6f0e1cfa7d160d86b2fb94793086d1294",
-                "sha256:80057c55641253b86dcb68b524f82328172371b6547d4c7462a9127fbfbbabfc"
+                "sha256:d1c8cd931af7461f6d18bc6063383e8654d9e9ef19d58ee6dc01e8515bbf55df",
+                "sha256:df90de1162b1a941ee486f484691dc7c33123ee638ea5d6ca604061306e0fdde"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==4.0"
+            "version": "==4.1.0"
         },
         "attrs": {
             "hashes": [
