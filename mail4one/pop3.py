@@ -29,7 +29,7 @@ from .poputils import (
     end,
     Request,
     MailEntry,
-    get_mail,
+    get_mail_fp,
     get_mails_list,
     MailList,
 )
@@ -217,7 +217,12 @@ def trans_command_retr(mails: MailList, req: Request) -> None:
     entry = mails.get(req.arg1)
     if entry:
         write(ok("Contents follow"))
-        write(get_mail(entry))
+        with get_mail_fp(entry) as fp:
+            for line in fp:
+                if line.startswith(b"."):
+                    write(b".")  # prepend dot
+                write(line)
+        # write(get_mail(entry)) # no prepend dot
         write(end())
         mails.delete(req.arg1)
     else:

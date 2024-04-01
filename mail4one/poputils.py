@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
+from contextlib import contextmanager
 
 
 class ClientError(Exception):
@@ -122,6 +123,12 @@ def set_nid(entries: list[MailEntry]):
     entries.sort(reverse=True, key=lambda e: (e.c_time, e.uid))
     for i, entry in enumerate(entries, start=1):
         entry.nid = i
+
+
+@contextmanager
+def get_mail_fp(entry: MailEntry):
+    with open(entry.path, mode="rb") as fp:
+        yield fp
 
 
 def get_mail(entry: MailEntry) -> bytes:

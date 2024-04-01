@@ -4,6 +4,7 @@ import logging
 import tempfile
 import time
 import os
+import poplib
 from mail4one.pop3 import create_pop_server
 from mail4one.config import User
 from pathlib import Path
@@ -19,7 +20,13 @@ AQXWXSWNGAEPGIMG2F3QDKBXL3MRHY6K2BPID64ZR6LABLPVSF
 TEST_USER = "foobar"
 TEST_MBOX = "foobar_mails"
 
-USERS = [User(username=TEST_USER, password_hash=TEST_HASH, mbox=TEST_MBOX)]
+TEST_USER2 = "foo2"
+TEST_MBOX2 = "foo2mails"
+
+USERS = [
+    User(username=TEST_USER, password_hash=TEST_HASH, mbox=TEST_MBOX),
+    User(username=TEST_USER2, password_hash=TEST_HASH, mbox=TEST_MBOX2),
+]
 
 MAILS_PATH: Path
 
@@ -50,13 +57,21 @@ def setUpModule() -> None:
     td = tempfile.TemporaryDirectory(prefix="m41.pop.")
     unittest.addModuleCleanup(td.cleanup)
     MAILS_PATH = Path(td.name)
-    os.mkdir(MAILS_PATH / TEST_MBOX)
-    for md in ("new", "cur", "tmp"):
-        os.mkdir(MAILS_PATH / TEST_MBOX / md)
+    for mbox in (TEST_MBOX, TEST_MBOX2):
+        os.mkdir(MAILS_PATH / mbox)
+        for md in ("new", "cur", "tmp"):
+            os.mkdir(MAILS_PATH / mbox / md)
     with open(MAILS_PATH / TEST_MBOX / "new/msg1.eml", "wb") as f:
         f.write(TESTMAIL)
     with open(MAILS_PATH / TEST_MBOX / "new/msg2.eml", "wb") as f:
         f.write(TESTMAIL)
+    with open(MAILS_PATH / TEST_MBOX2 / "new/msg1.eml", "wb") as f:
+        f.write(TESTMAIL)
+        f.write(b"More lines to follow\r\n")
+        f.write(b".Line starts with a dot\r\n")
+        f.write(b"some more lines\r\n")
+        f.write(b".\r\n")
+        f.write(b"Previous line just has a dot\r\n")
     logging.debug(MAILS_PATH)
 
 
@@ -197,6 +212,22 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
         S: +OK Bye
         """
         await self.dialog_checker(dialog)
+
+    async def test_poplib(self) -> None:
+        def run_poplib():
+            pc = poplib.POP3("127.0.0.1", 7995)
+            try:
+                self.assertEqual(b"+OK Server Ready", pc.getwelcome())
+                self.assertEqual(b"+OK Welcome", pc.user("foo2"))
+                self.assertEqual(b"+OK Login successful", pc.pass_("helloworld"))
+                _, eml, oc = pc.retr(1)
+                self.assertIn(b"Previous line just has a dot", eml)
+                self.assertIn(b".Line starts with a dot", eml)
+                self.assertIn(b".", eml)
+            finally:
+                pc.quit()
+
+        await asyncio.to_thread(run_poplib)
 
     async def asyncTearDown(self) -> None:
         logging.debug("at teardown")
