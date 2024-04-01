@@ -32,7 +32,7 @@ requirements.txt: Pipfile.lock
 	pipenv requirements > requirements.txt
 
 format:
-	black mail4one/*py
+	black mail4one/*py tests/*py
 
 build-dev: requirements.txt build
 

@@ -10,27 +10,31 @@ class TestPWHash(unittest.TestCase):
         pwinfo = parse_hash(pwhash)
         self.assertEqual(len(pwinfo.salt), SALT_LEN)
         self.assertEqual(len(pwinfo.scrypt_hash), KEY_LEN)
-        self.assertTrue(check_pass(password, pwinfo),
-                        "check pass with correct password")
-        self.assertFalse(check_pass("foobar", pwinfo),
-                         "check pass with wrong password")
+        self.assertTrue(
+            check_pass(password, pwinfo), "check pass with correct password"
+        )
+        self.assertFalse(check_pass("foobar", pwinfo), "check pass with wrong password")
 
     def test_hardcoded_hash(self):
-        test_hash = "".join(c for c in """
+        test_hash = "".join(
+            c
+            for c in """
         AFTY5EVN7AX47ZL7UMH3BETYWFBTAV3XHR73CEFAJBPN2NIHPWD
         ZHV2UQSMSPHSQQ2A2BFQBNC77VL7F2UKATQNJZGYLCSU6C43UQD
         AQXWXSWNGAEPGIMG2F3QDKBXL3MRHY6K2BPID64ZR6LABLPVSF
-        """ if not c.isspace())
+        """
+            if not c.isspace()
+        )
         pwinfo = parse_hash(test_hash)
-        self.assertTrue(check_pass("helloworld", pwinfo),
-                        "check pass with correct password")
-        self.assertFalse(check_pass("foobar", pwinfo),
-                         "check pass with wrong password")
+        self.assertTrue(
+            check_pass("helloworld", pwinfo), "check pass with correct password"
+        )
+        self.assertFalse(check_pass("foobar", pwinfo), "check pass with wrong password")
 
     def test_invalid_hash(self):
         with self.assertRaises(Exception):
             parse_hash("sdlfkjdsklfjdsk")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

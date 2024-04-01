@@ -67,10 +67,11 @@ class TestConfig(unittest.TestCase):
     def test_get_mboxes(self) -> None:
         cfg = config.Config(TEST_CONFIG)
         rules = config.parse_checkers(cfg)
-        self.assertEqual(config.get_mboxes("foo@bar.com", rules), ['spam'])
-        self.assertEqual(config.get_mboxes("foo@mydomain.com", rules), ['all'])
-        self.assertEqual(config.get_mboxes("first.last@mydomain.com", rules),
-                         ['important', 'all'])
+        self.assertEqual(config.get_mboxes("foo@bar.com", rules), ["spam"])
+        self.assertEqual(config.get_mboxes("foo@mydomain.com", rules), ["all"])
+        self.assertEqual(
+            config.get_mboxes("first.last@mydomain.com", rules), ["important", "all"]
+        )
 
 
 if __name__ == "__main__":

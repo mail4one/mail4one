@@ -10,7 +10,7 @@ from pathlib import Path
 
 from mail4one.smtp import create_smtp_server
 
-TEST_MBOX = 'foobar_mails'
+TEST_MBOX = "foobar_mails"
 MAILS_PATH: Path
 
 
@@ -21,7 +21,7 @@ def setUpModule() -> None:
     unittest.addModuleCleanup(td.cleanup)
     MAILS_PATH = Path(td.name)
     os.mkdir(MAILS_PATH / TEST_MBOX)
-    for md in ('new', 'cur', 'tmp'):
+    for md in ("new", "cur", "tmp"):
         os.mkdir(MAILS_PATH / TEST_MBOX / md)
 
 
@@ -32,7 +32,8 @@ class TestSMTP(unittest.IsolatedAsyncioTestCase):
             host="127.0.0.1",
             port=7996,
             mails_path=MAILS_PATH,
-            mbox_finder=lambda addr: [TEST_MBOX])
+            mbox_finder=lambda addr: [TEST_MBOX],
+        )
         self.task = asyncio.create_task(smtp_server.serve_forever())
 
     async def test_send_mail(self) -> None:
@@ -45,8 +46,9 @@ class TestSMTP(unittest.IsolatedAsyncioTestCase):
         msg = b"".join(l.strip() + b"\r\n" for l in msg.splitlines())
 
         def send_mail():
-            with contextlib.closing(smtplib.SMTP(host="127.0.0.1",
-                                                 port=7996)) as client:
+            with contextlib.closing(
+                smtplib.SMTP(host="127.0.0.1", port=7996)
+            ) as client:
                 client.sendmail("foo@sender.com", "foo@bar.com", msg)
                 _, local_port = client.sock.getsockname()
                 return local_port
@@ -62,7 +64,7 @@ class TestSMTP(unittest.IsolatedAsyncioTestCase):
         Byee
         """
         expected = "".join(l.strip() + "\r\n" for l in expected.splitlines())
-        mails = list((MAILS_PATH / TEST_MBOX / 'new').glob("*"))
+        mails = list((MAILS_PATH / TEST_MBOX / "new").glob("*"))
         self.assertEqual(len(mails), 1)
         self.assertEqual(mails[0].read_bytes(), expected.encode())
 

@@ -8,14 +8,18 @@ from mail4one.pop3 import create_pop_server
 from mail4one.config import User
 from pathlib import Path
 
-TEST_HASH = "".join(c for c in """
+TEST_HASH = "".join(
+    c
+    for c in """
 AFTY5EVN7AX47ZL7UMH3BETYWFBTAV3XHR73CEFAJBPN2NIHPWD
 ZHV2UQSMSPHSQQ2A2BFQBNC77VL7F2UKATQNJZGYLCSU6C43UQD
 AQXWXSWNGAEPGIMG2F3QDKBXL3MRHY6K2BPID64ZR6LABLPVSF
-""" if not c.isspace())
+"""
+    if not c.isspace()
+)
 
-TEST_USER = 'foobar'
-TEST_MBOX = 'foobar_mails'
+TEST_USER = "foobar"
+TEST_MBOX = "foobar_mails"
 
 USERS = [User(username=TEST_USER, password_hash=TEST_HASH, mbox=TEST_MBOX)]
 
@@ -48,11 +52,11 @@ def setUpModule() -> None:
     unittest.addModuleCleanup(td.cleanup)
     MAILS_PATH = Path(td.name)
     os.mkdir(MAILS_PATH / TEST_MBOX)
-    for md in ('new', 'cur', 'tmp'):
+    for md in ("new", "cur", "tmp"):
         os.mkdir(MAILS_PATH / TEST_MBOX / md)
-    with open(MAILS_PATH / TEST_MBOX/ 'new/msg1.eml', 'wb') as f:
+    with open(MAILS_PATH / TEST_MBOX / "new/msg1.eml", "wb") as f:
         f.write(TESTMAIL)
-    with open(MAILS_PATH / TEST_MBOX/ 'new/msg2.eml', 'wb') as f:
+    with open(MAILS_PATH / TEST_MBOX / "new/msg2.eml", "wb") as f:
         f.write(TESTMAIL)
     logging.debug(MAILS_PATH)
 
@@ -65,13 +69,11 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self) -> None:
         logging.debug("at asyncSetUp")
-        pop_server = await create_pop_server(host='127.0.0.1',
-                                             port=7995,
-                                             mails_path=MAILS_PATH,
-                                             users=USERS)
+        pop_server = await create_pop_server(
+            host="127.0.0.1", port=7995, mails_path=MAILS_PATH, users=USERS
+        )
         self.task = asyncio.create_task(pop_server.serve_forever())
-        self.reader, self.writer = await asyncio.open_connection(
-            '127.0.0.1', 7995)
+        self.reader, self.writer = await asyncio.open_connection("127.0.0.1", 7995)
 
     async def test_QUIT(self) -> None:
         dialog = """
@@ -115,8 +117,8 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
         await self.dialog_checker(dialog)
 
     async def test_dupe_AUTH(self) -> None:
-        r1, w1 = await asyncio.open_connection('127.0.0.1', 7995)
-        r2, w2 = await asyncio.open_connection('127.0.0.1', 7995)
+        r1, w1 = await asyncio.open_connection("127.0.0.1", 7995)
+        r2, w2 = await asyncio.open_connection("127.0.0.1", 7995)
         dialog = """
         S: +OK Server Ready
         C: USER foobar
@@ -206,9 +208,9 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
     async def dialog_checker(self, dialog: str) -> None:
         await self.dialog_checker_impl(self.reader, self.writer, dialog)
 
-    async def dialog_checker_impl(self, reader: asyncio.StreamReader,
-                                  writer: asyncio.StreamWriter,
-                                  dialog: str) -> None:
+    async def dialog_checker_impl(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, dialog: str
+    ) -> None:
         for line in dialog.splitlines():
             line = line.strip()
             if not line:
@@ -222,5 +224,5 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(data, resp)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
