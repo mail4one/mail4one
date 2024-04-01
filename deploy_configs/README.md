@@ -81,15 +81,16 @@ systemctl status mail4one
 Above command should fail as the TLS certificates don't exist yet.
 
 ## Setup TLS certificates 
-Install [certbot](https://certbot.eff.org/) and run below command. Follow instructions to create TLS certificates. Usually you want certificate for domain name like `mail.example.com`
+Install [certbot](https://certbot.eff.org/) and run below command. Follow instructions to create TLS certificates. Usually you want certificate for domain name like `mail.mydomain.com`
 ```sh
 sudo certbot certonly
-sudo cp /etc/letsencrypt/live/mail.example.com/{fullchain,privkey}.pem  /var/lib/mail4one/certs/
-sudo chown mail4one:mail4one /var/lib/mail4one/certs/{fullchain,privkey}.pem
 
-# Edit mail4one_cert_copy.sh to update your domain name
+# **Edit** mail4one_cert_copy.sh to update your domain name
 sudo cp mail4one_cert_copy.sh /etc/letsencrypt/renewal-hooks/deploy/
 sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/mail4one_cert_copy.sh
+
+# This will create and copy the certificates to the right path with correct permissions and ownership
+sudo certbot certonly -d mail.mydomain.com --run-deploy-hooks --dry-run
 ```
 ## Restart service and check logs
 ```sh
@@ -109,6 +110,6 @@ python3 -m http.server 25
 In local machine or a browser
 You should see file listing a, b, c. Repeat for port 465, 995 to make sure firewall rules and dns is working
 ```sh
-curl http://mail.example.com:25
+curl http://mail.mydomain.com:25
 ```
 If not working, refer to VPS settings and OS firewall settings.
