@@ -1,8 +1,6 @@
 import asyncio
 import logging
-import os
 import ssl
-import sys
 from argparse import ArgumentParser
 from pathlib import Path
 from getpass import getpass

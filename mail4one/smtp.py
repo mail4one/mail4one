@@ -1,7 +1,5 @@
 import asyncio
-import io
 import logging
-import mailbox
 import ssl
 import uuid
 import shutil
@@ -13,11 +11,9 @@ from email.message import Message
 import email.policy
 from email.generator import BytesGenerator
 import tempfile
-import random
 
-from aiosmtpd.handlers import Mailbox, AsyncMessage
-from aiosmtpd.smtp import SMTP, DATA_SIZE_DEFAULT
-from aiosmtpd.smtp import SMTP as SMTPServer
+from aiosmtpd.handlers import AsyncMessage
+from aiosmtpd.smtp import SMTP
 from aiosmtpd.smtp import Envelope as SMTPEnvelope
 from aiosmtpd.smtp import Session as SMTPSession
 
@@ -31,7 +27,7 @@ class MyHandler(AsyncMessage):
         self.mbox_finder = mbox_finder
 
     async def handle_DATA(
-        self, server: SMTPServer, session: SMTPSession, envelope: SMTPEnvelope
+        self, server: SMTP, session: SMTPSession, envelope: SMTPEnvelope
     ) -> str:
         self.rcpt_tos = envelope.rcpt_tos
         self.peer = session.peer

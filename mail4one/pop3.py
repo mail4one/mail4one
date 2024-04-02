@@ -2,11 +2,8 @@ import asyncio
 import contextlib
 import contextvars
 import logging
-import os
 import ssl
-import uuid
 from dataclasses import dataclass
-from hashlib import sha256
 from pathlib import Path
 from .config import User
 from .pwhash import parse_hash, check_pass, PWInfo
