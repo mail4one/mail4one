@@ -89,6 +89,9 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
         self.task = asyncio.create_task(pop_server.serve_forever())
         self.reader, self.writer = await asyncio.open_connection("127.0.0.1", 7995)
 
+        # Additional writers to close
+        self.ws: list[asyncio.StreamWriter] = []
+
     async def test_QUIT(self) -> None:
         dialog = """
         S: +OK Server Ready
@@ -133,6 +136,7 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
     async def test_dupe_AUTH(self) -> None:
         r1, w1 = await asyncio.open_connection("127.0.0.1", 7995)
         r2, w2 = await asyncio.open_connection("127.0.0.1", 7995)
+        self.ws += w1, w2
         dialog = """
         S: +OK Server Ready
         C: USER foobar
@@ -231,8 +235,10 @@ class TestPop3(unittest.IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self) -> None:
         logging.debug("at teardown")
-        self.writer.close()
-        await self.writer.wait_closed()
+        for w in self.ws + [self.writer]:
+            w.close()
+            await w.wait_closed()
+        self.ws.clear()
         self.task.cancel("test done")
 
     async def dialog_checker(self, dialog: str) -> None:
