@@ -3,14 +3,14 @@ import contextlib
 import contextvars
 import logging
 import ssl
+import random
+from typing import Optional
+from asyncio import StreamReader, StreamWriter
 from dataclasses import dataclass
 from pathlib import Path
 from .config import User
 from .pwhash import parse_hash, check_pass, PWInfo
-from asyncio import StreamReader, StreamWriter
-import random
 
-from typing import Optional
 
 from .poputils import (
     InvalidCommand,
@@ -313,12 +313,10 @@ async def start_session() -> None:
         assert state().mbox
         await transaction_stage()
         logger.info(f"User:{state().username} done")
-    except ClientDisconnected as c:
+    except ClientDisconnected:
         logger.info("Client disconnected")
-        pass
     except ClientQuit:
         logger.info("Client QUIT")
-        pass
     except ClientError as c:
         write(err("Something went wrong"))
         logger.error(f"Unexpected client error: {c}")

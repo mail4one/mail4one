@@ -6,7 +6,6 @@ import shutil
 from functools import partial
 from pathlib import Path
 from typing import Callable, Optional
-from . import config
 from email.message import Message
 import email.policy
 from email.generator import BytesGenerator

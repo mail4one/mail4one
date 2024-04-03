@@ -1,4 +1,5 @@
-import json
+"""Module for parsing mail4one config.json"""
+
 import re
 import logging
 from typing import Callable, Union, Optional
