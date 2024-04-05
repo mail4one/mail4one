@@ -1,6 +1,5 @@
-# Needs python3 >= 3.9, sed, git for build, docker for tests
-.PHONY: build
-build: clean
+# Needs python3 >= 3.9, sed, git for build
+mail4one.pyz: requirements.txt mail4one/*py
 	python3 -m pip install -r requirements.txt --no-compile --target build
 	cp -r mail4one/ build/
 	sed -i "s/DEVELOMENT/$(shell scripts/get_version.sh)/" build/mail4one/version.py
@@ -13,6 +12,13 @@ build: clean
 		--python "/usr/bin/env python3" \
 		--main mail4one.server:main \
 		--compress build
+
+.PHONY: build
+build: clean mail4one.pyz
+
+.PHONY: test
+test: mail4one.pyz
+	PYTHONPATH=mail4one.pyz python3 -m unittest discover
 
 .PHONY: clean
 clean:
@@ -59,6 +65,6 @@ update:
 shell:
 	MYPYPATH=$(shell ls -d `pipenv --venv`/lib/python3*/site-packages) pipenv shell
 	
-.PHONY: test
-test:
+.PHONY: dev-test
+dev-test:
 	pipenv run python -m unittest discover
