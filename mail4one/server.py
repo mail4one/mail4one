@@ -84,6 +84,8 @@ async def a_main(cfg: config.Config) -> None:
                 mails_path=Path(cfg.mails_path),
                 mbox_finder=mbox_finder,
                 ssl_context=stls_context,
+                require_starttls=stls.require_starttls,
+                smtputf8=stls.smtputf8,
             )
             servers.append(smtp_server_starttls)
         elif scfg.server_type == "smtp":
@@ -94,6 +96,7 @@ async def a_main(cfg: config.Config) -> None:
                 mails_path=Path(cfg.mails_path),
                 mbox_finder=mbox_finder,
                 ssl_context=get_tls_context(smtp.tls),
+                smtputf8=smtp.smtputf8,
             )
             servers.append(smtp_server)
         else:

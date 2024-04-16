@@ -33,6 +33,8 @@ class TestSMTP(unittest.IsolatedAsyncioTestCase):
             port=7996,
             mails_path=MAILS_PATH,
             mbox_finder=lambda addr: [TEST_MBOX],
+            ssl_context=None,
+            smtputf8=True,
         )
         self.task = asyncio.create_task(smtp_server.serve_forever())
 
