@@ -56,13 +56,14 @@ class PopCfg(ServerCfg):
 
 class SmtpStartTLSCfg(ServerCfg):
     server_type = "smtp_starttls"
-    smtputf8 = True  # Not used yet
+    require_starttls = True
+    smtputf8 = True
     port = 25
 
 
 class SmtpCfg(ServerCfg):
-    server_type = "smtp_starttls"
-    smtputf8 = True  # Not used yet
+    server_type = "smtp"
+    smtputf8 = True
     port = 465
 
 

@@ -59,16 +59,20 @@ class MyHandler(AsyncMessage):
 
 
 def protocol_factory_starttls(
-    mails_path: Path, mbox_finder: Callable[[str], list[str]], context: ssl.SSLContext
+    mails_path: Path,
+    mbox_finder: Callable[[str], list[str]],
+    context: ssl.SSLContext,
+    require_starttls: bool,
+    smtputf8: bool,
 ):
     logger.info("Got smtp client cb starttls")
     try:
         handler = MyHandler(mails_path, mbox_finder)
         smtp = SMTP(
             handler=handler,
-            require_starttls=True,
+            require_starttls=require_starttls,
             tls_context=context,
-            enable_SMTPUTF8=True,
+            enable_SMTPUTF8=smtputf8,
         )
     except:
         logger.exception("Something went wrong")
@@ -76,11 +80,13 @@ def protocol_factory_starttls(
     return smtp
 
 
-def protocol_factory(mails_path: Path, mbox_finder: Callable[[str], list[str]]):
+def protocol_factory(
+    mails_path: Path, mbox_finder: Callable[[str], list[str]], smtputf8: bool
+):
     logger.info("Got smtp client cb")
     try:
         handler = MyHandler(mails_path, mbox_finder)
-        smtp = SMTP(handler=handler, enable_SMTPUTF8=True)
+        smtp = SMTP(handler=handler, enable_SMTPUTF8=smtputf8)
     except:
         logger.exception("Something went wrong")
         raise
@@ -93,13 +99,22 @@ async def create_smtp_server_starttls(
     mails_path: Path,
     mbox_finder: Callable[[str], list[str]],
     ssl_context: ssl.SSLContext,
+    require_starttls: bool,
+    smtputf8: bool,
 ) -> asyncio.Server:
     logging.info(
         f"Starting SMTP STARTTLS server {host=}, {port=}, {mails_path=!s}, {ssl_context != None=}"
     )
     loop = asyncio.get_event_loop()
     return await loop.create_server(
-        partial(protocol_factory_starttls, mails_path, mbox_finder, ssl_context),
+        partial(
+            protocol_factory_starttls,
+            mails_path,
+            mbox_finder,
+            ssl_context,
+            require_starttls,
+            smtputf8,
+        ),
         host=host,
         port=port,
         start_serving=False,
@@ -111,14 +126,15 @@ async def create_smtp_server(
     port: int,
     mails_path: Path,
     mbox_finder: Callable[[str], list[str]],
-    ssl_context: Optional[ssl.SSLContext] = None,
+    ssl_context: Optional[ssl.SSLContext],
+    smtputf8: bool,
 ) -> asyncio.Server:
     logging.info(
         f"Starting SMTP server {host=}, {port=}, {mails_path=!s}, {ssl_context != None=}"
     )
     loop = asyncio.get_event_loop()
     return await loop.create_server(
-        partial(protocol_factory, mails_path, mbox_finder),
+        partial(protocol_factory, mails_path, mbox_finder, smtputf8),
         host=host,
         port=port,
         ssl=ssl_context,
