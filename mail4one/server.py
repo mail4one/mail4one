@@ -4,6 +4,7 @@ import ssl
 from argparse import ArgumentParser
 from pathlib import Path
 from getpass import getpass
+from typing import Optional, Union
 
 from .smtp import create_smtp_server_starttls, create_smtp_server
 from .pop3 import create_pop_server
@@ -11,7 +12,6 @@ from .version import VERSION
 
 from . import config
 from . import pwhash
-from typing import Optional, Union
 
 
 def create_tls_context(certfile, keyfile) -> ssl.SSLContext:
