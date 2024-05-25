@@ -20,21 +20,26 @@ logger = logging.getLogger("smtp")
 
 
 class MyHandler(AsyncMessage):
-    def __init__(self, mails_path: Path, mbox_finder: Callable[[str], list[str]]):
+    def __init__(self, mails_path: Path, mbox_finder: Callable[[str], list[str]], listener_type: str):
         super().__init__()
         self.mails_path = mails_path
         self.mbox_finder = mbox_finder
         self.rcpt_tos = []
         self.peer = None
+        self.starttls = False
+        self.listener_type = listener_type
 
     async def handle_DATA(
         self, server: SMTP, session: SMTPSession, envelope: SMTPEnvelope
     ) -> str:
         self.rcpt_tos = envelope.rcpt_tos
         self.peer = session.peer
+        if session.ssl:
+            self.starttls = True
         return await super().handle_DATA(server, session, envelope)
 
     async def handle_message(self, message: Message):  # type: ignore[override]
+        message["X-SSL"] = f"Type: {self.listener_type}, STARTTLS: {self.starttls}"
         all_mboxes: set[str] = set()
         for addr in self.rcpt_tos:
             for mbox in self.mbox_finder(addr.lower()):
@@ -68,7 +73,7 @@ def protocol_factory_starttls(
 ):
     logger.info("Got smtp client cb starttls")
     try:
-        handler = MyHandler(mails_path, mbox_finder)
+        handler = MyHandler(mails_path, mbox_finder, "starttls")
         smtp = SMTP(
             handler=handler,
             require_starttls=require_starttls,
@@ -86,7 +91,7 @@ def protocol_factory(
 ):
     logger.info("Got smtp client cb")
     try:
-        handler = MyHandler(mails_path, mbox_finder)
+        handler = MyHandler(mails_path, mbox_finder, "plain")
         smtp = SMTP(handler=handler, enable_SMTPUTF8=smtputf8)
     except:
         logger.exception("Something went wrong")
