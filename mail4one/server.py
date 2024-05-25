@@ -42,17 +42,15 @@ async def a_main(cfg: config.Config) -> None:
     def get_tls_context(tls: Union[config.TLSCfg, str]):
         if tls == "default":
             return default_tls_context
-        elif tls == "disable":
+        if tls == "disable":
             return None
-        else:
-            tls_cfg = config.TLSCfg(tls)
-            return create_tls_context(tls_cfg.certfile, tls_cfg.keyfile)
+        tls_cfg = config.TLSCfg(tls)
+        return create_tls_context(tls_cfg.certfile, tls_cfg.keyfile)
 
     def get_host(host):
         if host == "default":
             return cfg.default_host
-        else:
-            return host
+        return host
 
     mbox_finder = config.gen_addr_to_mboxes(cfg)
     servers: list[asyncio.Server] = []

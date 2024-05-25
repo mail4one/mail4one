@@ -96,11 +96,10 @@ def parse_checkers(cfg: Config) -> list[Checker]:
             raise Exception("Both addrs and addr_rexs is set")
         if m.addrs:
             return lambda malias: malias in m.addrs
-        elif m.addr_rexs:
+        if m.addr_rexs:
             compiled_res = [re.compile(reg) for reg in m.addr_rexs]
             return lambda malias: any(reg.match(malias) for reg in compiled_res)
-        else:
-            raise Exception("Neither addrs nor addr_rexs is set")
+        raise Exception("Neither addrs nor addr_rexs is set")
 
     matches = {m.name: make_match_fn(Match(m)) for m in cfg.matches or []}
     matches[DEFAULT_MATCH_ALL] = lambda _: True

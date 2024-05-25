@@ -24,6 +24,8 @@ class MyHandler(AsyncMessage):
         super().__init__()
         self.mails_path = mails_path
         self.mbox_finder = mbox_finder
+        self.rcpt_tos = []
+        self.peer = None
 
     async def handle_DATA(
         self, server: SMTP, session: SMTPSession, envelope: SMTPEnvelope
@@ -32,7 +34,7 @@ class MyHandler(AsyncMessage):
         self.peer = session.peer
         return await super().handle_DATA(server, session, envelope)
 
-    async def handle_message(self, m: Message):  # type: ignore[override]
+    async def handle_message(self, message: Message):  # type: ignore[override]
         all_mboxes: set[str] = set()
         for addr in self.rcpt_tos:
             for mbox in self.mbox_finder(addr.lower()):
@@ -49,7 +51,7 @@ class MyHandler(AsyncMessage):
             temp_email_path = Path(tmpdir) / filename
             with open(temp_email_path, "wb") as fp:
                 gen = BytesGenerator(fp, policy=email.policy.SMTP)
-                gen.flatten(m)
+                gen.flatten(message)
             for mbox in all_mboxes:
                 shutil.copy(temp_email_path, self.mails_path / mbox / "new")
             logger.info(
@@ -102,7 +104,7 @@ async def create_smtp_server_starttls(
     smtputf8: bool,
 ) -> asyncio.Server:
     logging.info(
-        f"Starting SMTP STARTTLS server {host=}, {port=}, {mails_path=!s}, {ssl_context != None=}"
+        f"Starting SMTP STARTTLS server {host=}, {port=}, {mails_path=!s}, {bool(ssl_context)=}"
     )
     loop = asyncio.get_event_loop()
     return await loop.create_server(
@@ -129,7 +131,7 @@ async def create_smtp_server(
     smtputf8: bool,
 ) -> asyncio.Server:
     logging.info(
-        f"Starting SMTP server {host=}, {port=}, {mails_path=!s}, {ssl_context != None=}"
+        f"Starting SMTP server {host=}, {port=}, {mails_path=!s}, {bool(ssl_context)=}"
     )
     loop = asyncio.get_event_loop()
     return await loop.create_server(
