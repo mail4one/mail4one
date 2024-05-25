@@ -1,3 +1,4 @@
+Notes for developers
 
 ## Running just one test
 
@@ -8,9 +9,12 @@ python -m unittest tests.test_pop.TestPop3.test_CAPA
 ## Patch for enable logging in test
 
 Patch generated using below
+
 ```
 git diff --patch -U1 tests >> ./DEVNOTES.md
 ```
+
+Apply with below
 
 ```bash
 git apply - <<PATCH
@@ -24,4 +28,11 @@ index 55c1a91..a825665 100644
 +    logging.basicConfig(level=logging.DEBUG)
      td = tempfile.TemporaryDirectory(prefix="m41.pop.")
 PATCH
+```
+
+## pylint
+
+```
+pylint mail4one/*py > /tmp/errs
+vim +"cfile /tmp/errs"
 ```

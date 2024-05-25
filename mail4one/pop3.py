@@ -298,7 +298,7 @@ async def transaction_stage() -> None:
             deleted_items_path, existing_deleted_items.union(new_deleted_items)
         )
 
-    logger.info(f"Saved deleted items")
+    logger.info("Saved deleted items")
 
 
 async def start_session() -> None:
@@ -341,7 +341,7 @@ def make_pop_server_callback(mails_path: Path, users: list[User], timeout_second
         c_shared_state.set(s_state)
         ip, _ = writer.get_extra_info("peername")
         c_state.set(State(reader=reader, writer=writer, ip=ip, req_id=s_state.next_id()))
-        logger.info(f"Got pop server callback")
+        logger.info("Got pop server callback")
         try:
             try:
                 return await asyncio.wait_for(start_session(), timeout_seconds)
@@ -363,7 +363,7 @@ async def create_pop_server(
     timeout_seconds: int = 60,
 ) -> asyncio.Server:
     logging.info(
-        f"Starting POP3 server {host=}, {port=}, {mails_path=!s}, {len(users)=}, {ssl_context != None=}, {timeout_seconds=}"
+        f"Starting POP3 server {host=}, {port=}, {mails_path=!s}, {len(users)=}, {bool(ssl_context)=}, {timeout_seconds=}"
     )
     return await asyncio.start_server(
         make_pop_server_callback(mails_path, users, timeout_seconds),
