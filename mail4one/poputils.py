@@ -20,12 +20,10 @@ class ClientDisconnected(ClientError):
 class InvalidCommand(ClientError):
     RETRIES = 3
     """WIll allow NUM_BAD_COMMANDS times"""
-    pass
 
 
 class AuthError(ClientError):
     RETRIES = 3
-    pass
 
 
 class Command(Enum):

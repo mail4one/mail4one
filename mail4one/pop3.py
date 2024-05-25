@@ -72,14 +72,14 @@ class PopLogger(logging.LoggerAdapter):
     def __init__(self):
         super().__init__(logging.getLogger("pop3"), None)
 
-    def process(self, msg, kwargs):
-        state: State = c_state.get(None)
-        if not state:
-            return super().process(msg, kwargs)
+    def process(self, log_msg, kwargs):
+        st: State = c_state.get(None)
+        if not st:
+            return super().process(log_msg, kwargs)
         user = "NA"
-        if state.username:
-            user = state.username
-        return super().process(f"{state.ip} {state.req_id} {user} {msg}", kwargs)
+        if st.username:
+            user = st.username
+        return super().process(f"{st.ip} {st.req_id} {user} {log_msg}", kwargs)
 
 
 logger = PopLogger()
@@ -101,8 +101,7 @@ async def next_req() -> Request:
             if request.cmd == Command.QUIT:
                 raise ClientQuit
             return request
-    else:
-        raise ClientError(f"Bad command {InvalidCommand.RETRIES} times")
+    raise ClientError(f"Bad command {InvalidCommand.RETRIES} times")
 
 
 async def expect_cmd(*commands: Command) -> Request:
@@ -150,25 +149,23 @@ async def auth_stage() -> None:
                 write(ok("Following are supported"))
                 write(msg("USER"))
                 write(end())
-            else:
-                await handle_user_pass_auth(req)
-                if state().username in scfg().loggedin_users:
-                    logger.warning(
-                        f"User: {state().username} already has an active session"
-                    )
-                    raise AuthError("Already logged in")
-                else:
-                    scfg().loggedin_users.add(state().username)
-                    write(ok("Login successful"))
-                    return
+                continue
+            await handle_user_pass_auth(req)
+            if state().username in scfg().loggedin_users:
+                logger.warning(
+                    f"User: {state().username} already has an active session"
+                )
+                raise AuthError("Already logged in")
+            scfg().loggedin_users.add(state().username)
+            write(ok("Login successful"))
+            return
         except AuthError as ae:
             write(err(f"Auth Failed: {ae}"))
-        except ClientQuit as c:
+        except ClientQuit:
             write(ok("Bye"))
             logger.warning("Client has QUIT before auth succeeded")
             raise
-    else:
-        raise ClientError("Failed to authenticate")
+    raise ClientError("Failed to authenticate")
 
 
 def trans_command_capa(_, __) -> None:
@@ -269,9 +266,8 @@ async def process_transactions(mails_list: list[MailEntry]) -> set[str]:
         except KeyError:
             write(err("Not implemented"))
             raise ClientError("We shouldn't reach here")
-        else:
-            func(mails, req)
-            await state().writer.drain()
+        func(mails, req)
+        await state().writer.drain()
 
 
 def get_deleted_items(deleted_items_path: Path) -> set[str]:
@@ -339,12 +335,12 @@ def parse_users(users: list[User]) -> dict[str, tuple[PWInfo, str]]:
 
 
 def make_pop_server_callback(mails_path: Path, users: list[User], timeout_seconds: int):
-    scfg = SharedState(mails_path=mails_path, users=parse_users(users))
+    s_state = SharedState(mails_path=mails_path, users=parse_users(users))
 
     async def session_cb(reader: StreamReader, writer: StreamWriter):
-        c_shared_state.set(scfg)
+        c_shared_state.set(s_state)
         ip, _ = writer.get_extra_info("peername")
-        c_state.set(State(reader=reader, writer=writer, ip=ip, req_id=scfg.next_id()))
+        c_state.set(State(reader=reader, writer=writer, ip=ip, req_id=s_state.next_id()))
         logger.info(f"Got pop server callback")
         try:
             try:

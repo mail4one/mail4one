@@ -24,6 +24,8 @@ class MyHandler(AsyncMessage):
         super().__init__()
         self.mails_path = mails_path
         self.mbox_finder = mbox_finder
+        self.rcpt_tos = []
+        self.peer = None
 
     async def handle_DATA(
         self, server: SMTP, session: SMTPSession, envelope: SMTPEnvelope
