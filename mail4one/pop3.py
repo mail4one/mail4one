@@ -340,7 +340,9 @@ def make_pop_server_callback(mails_path: Path, users: list[User], timeout_second
     async def session_cb(reader: StreamReader, writer: StreamWriter):
         c_shared_state.set(s_state)
         ip, _ = writer.get_extra_info("peername")
-        c_state.set(State(reader=reader, writer=writer, ip=ip, req_id=s_state.next_id()))
+        c_state.set(
+            State(reader=reader, writer=writer, ip=ip, req_id=s_state.next_id())
+        )
         logger.info("Got pop server callback")
         try:
             try:

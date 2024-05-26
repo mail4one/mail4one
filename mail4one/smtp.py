@@ -20,7 +20,12 @@ logger = logging.getLogger("smtp")
 
 
 class MyHandler(AsyncMessage):
-    def __init__(self, mails_path: Path, mbox_finder: Callable[[str], list[str]], listener_type: str):
+    def __init__(
+        self,
+        mails_path: Path,
+        mbox_finder: Callable[[str], list[str]],
+        listener_type: str,
+    ):
         super().__init__()
         self.mails_path = mails_path
         self.mbox_finder = mbox_finder
