@@ -1,5 +1,5 @@
 -i https://pypi.org/simple
-aiosmtpd==1.4.5; python_version >= '3.8'
+aiosmtpd==1.4.6; python_version >= '3.8'
 atpublic==4.1.0; python_version >= '3.8'
 attrs==23.2.0; python_version >= '3.7'
 python-jata==1.2; python_version >= '3.8'

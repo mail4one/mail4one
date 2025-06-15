@@ -61,6 +61,7 @@ class TestSMTP(unittest.IsolatedAsyncioTestCase):
         X-Peer: ('127.0.0.1', {local_port})
         X-MailFrom: foo@sender.com
         X-RcptTo: foo@bar.com
+        X-SSL: Type: plain, STARTTLS: False
 
         Hello world
         Byee
